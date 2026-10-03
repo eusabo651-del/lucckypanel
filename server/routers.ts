@@ -52,7 +52,7 @@ export const appRouter = router({
     me: publicProcedure.query(async ({ ctx }) => {
       const session = ctx.rbxisSession;
       if (!session) return null;
-      if (session.role === "admin") return { role: "admin" as const, username: "SENSIADMIN00", name: "SENSIADMIN00", email: null };
+      if (session.role === "admin") return { role: "admin" as const, username: "LUCKADMIN00", name: "LUCKADMIN00", email: null };
       if (!session.userId || !session.licenseId) return null;
       const row = await getActiveLicenseSession(session.userId, session.licenseId);
       if (!row) return null;
@@ -85,8 +85,8 @@ export const appRouter = router({
       .input(z.object({ adminKey: z.string().min(1) }))
       .mutation(({ ctx, input }) => {
         if (normalizeAdminKey(input.adminKey) !== normalizeAdminKey(getAdminAccessKey())) throw new TRPCError({ code: "UNAUTHORIZED", message: "Chave de administrador inválida" });
-        const sessionToken = setSessionCookie(ctx.req, ctx.res, { role: "admin", username: "SENSIADMIN00" });
-        return { success: true as const, username: "SENSIADMIN00", sessionToken };
+        const sessionToken = setSessionCookie(ctx.req, ctx.res, { role: "admin", username: "LUCKADMIN00" });
+        return { success: true as const, username: "LUCKADMIN00", sessionToken };
       }),
     logout: publicProcedure.mutation(({ ctx }) => {
       clearSessionCookie(ctx.req, ctx.res);
