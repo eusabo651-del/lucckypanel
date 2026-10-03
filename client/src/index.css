@@ -329,3 +329,33 @@ html, body { background: linear-gradient(135deg, #030303 0%, #1b1b1b 52%, #05050
   .card-description { margin: 10px 0 14px; }
   .secure-footer { margin-top: 14px; padding-top: 11px; }
 }
+
+/* Auxílio mobile: remove a altura de tela cheia do cartão e centraliza o painel compacto. */
+@media (max-width: 760px) {
+  .aux-page { min-height: max(420px, calc(100svh - 138px)); padding: 12px 14px; place-items: center; }
+  .aux-window { width: min(620px, 100%); min-height: 0; height: auto; align-self: center; }
+  .aux-rail { flex: 0 0 56px; gap: 10px; padding: 16px 8px; }
+  .aux-brand { margin-bottom: 8px; }
+  .aux-content { padding: 20px 18px 12px; }
+  .aux-header { gap: 12px; padding-bottom: 16px; }
+  .aux-header h1 { margin: 7px 0 5px; font-size: 21px; }
+  .aux-header p { font-size: 11px; line-height: 1.45; }
+  .aux-panel-list { margin-top: 10px; }
+  .aux-toggle-row { padding: 14px 0; }
+  .aux-toggle-row b { font-size: 13px; }
+  .aux-toggle-row small { font-size: 10px; }
+  .aux-footer { margin-top: 18px; padding-top: 12px; padding-bottom: 4px; }
+  .aux-center-panel { padding: 28px 8px; }
+  .aux-module-grid { margin-top: 16px; }
+  .aux-module { min-height: 92px; gap: 14px; padding: 14px; }
+  .aux-injection { margin-top: 16px; }
+  .aux-injection-state { min-height: 55px; }
+  .aux-console { min-height: 80px; }
+}
+
+@media (max-width: 390px) {
+  .aux-page { padding-right: 10px; padding-left: 10px; }
+  .aux-rail { flex-basis: 50px; padding-right: 6px; padding-left: 6px; }
+  .aux-rail button { width: 36px; height: 36px; }
+  .aux-content { padding-right: 14px; padding-left: 14px; }
+}
