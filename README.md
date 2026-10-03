@@ -1,4 +1,4 @@
-# RBXIS Sensitivity Panel
+# LUCKY REI
 
 Painel de geração de sensibilidade com autenticação por key e vínculo de dispositivo (HWID).
 
@@ -49,4 +49,4 @@ pnpm test
 pnpm dev
 ```
 
-A interface usa uma paleta azul sobre o tema escuro.
+A interface usa uma paleta monocromática em gradiente preto e branco, com tela inicial otimizada para celulares.

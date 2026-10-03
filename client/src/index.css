@@ -260,3 +260,72 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .ios-install-guide { position: fixed; z-index: 90; inset: 0; display: grid; place-items: center; padding: 20px; background: #050608cc; backdrop-filter: blur(9px); }.ios-guide-card { width: min(390px, 100%); padding: 26px; border: 1px solid #30455b; border-radius: 16px; color: #f7f7f5; background: #151116; box-shadow: 0 25px 80px #000c; text-align: center; }.ios-guide-icon { display: grid; place-items: center; width: 52px; height: 52px; margin: 0 auto 17px; border-radius: 15px; color: #fff; background: #3283d8; box-shadow: 0 10px 25px #3283d844; }.ios-guide-card h2 { margin: 12px 0 9px; font-size: 21px; letter-spacing: -.05em; }.ios-guide-card p { margin: 0; color: #a7a1a5; font-size: 12px; line-height: 1.65; }.ios-guide-card p b { color: #fff; }.ios-share-hint { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 20px 0; padding: 14px 10px; border: 1px solid #3b3035; border-radius: 10px; color: #69a6ff; background: #11141b; font-size: 10px; font-weight: 700; }.ios-share-hint span:last-child { color: #d9dbe1; }.ios-guide-card > button { width: 100%; }
 
 .quick-exit-active { background: #050608; transition: opacity .18s ease; }.quick-exit-screen { display: grid; place-items: center; align-content: center; gap: 9px; min-height: 100svh; color: #eef0f2; text-align: center; animation: quick-exit-fade .18s ease both; }.quick-exit-screen span { color: #777d87; font-size: 11px; }.quick-exit-mark { display: grid; place-items: center; width: 54px; height: 54px; margin-bottom: 5px; border: 1px solid #30343c; border-radius: 50%; color: #aeb3bc; background: #111319; }.quick-exit-screen b { font-size: 14px; }.aux-module-grid .aux-module { cursor: pointer; }@keyframes quick-exit-fade { from { opacity: 0; transform: scale(.98); } to { opacity: 1; transform: scale(1); } }
+
+/* LUCKY REI: identidade monocromática em gradiente e tela inicial mobile */
+html, body { background: linear-gradient(135deg, #030303 0%, #1b1b1b 52%, #050505 100%); }
+.login-shell, .app-shell, .admin-shell, .loading-screen, .aux-page { filter: grayscale(1); }
+.login-shell { min-height: 100svh; background: radial-gradient(circle at 82% 4%, #424242 0, transparent 29%), radial-gradient(circle at 12% 92%, #252525 0, transparent 32%), linear-gradient(135deg, #050505 0%, #202020 55%, #070707 100%); }
+.login-shell::before { opacity: .1; background-size: 64px 64px; mask-image: linear-gradient(to bottom, #000, transparent 82%); }
+.login-split-glow { background: linear-gradient(transparent, #d7d7d7, transparent); opacity: .24; }
+.login-content { width: min(1120px, calc(100% - 48px)); grid-template-columns: minmax(0, 1fr) minmax(380px, 440px); gap: clamp(42px, 6vw, 86px); padding-top: clamp(30px, 5vh, 62px); padding-bottom: clamp(28px, 5vh, 58px); }
+.login-photo { position: relative; width: min(100%, 560px); height: clamp(150px, 20vh, 205px); margin: 0 0 23px; overflow: hidden; border: 1px solid #5b5b5b; border-radius: 15px; background: #111; box-shadow: 0 20px 55px #0009; }
+.login-photo::after { position: absolute; inset: 0; content: ""; pointer-events: none; background: linear-gradient(180deg, transparent 32%, #000b 100%); }
+.login-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 43%; filter: grayscale(1) contrast(1.12); }
+.login-photo figcaption { position: absolute; z-index: 1; right: 14px; bottom: 12px; color: #e6e6e6; font-size: 8px; font-weight: 800; letter-spacing: .16em; }
+.brand-icon, .aux-brand { color: #0a0a0a; background: linear-gradient(145deg, #f8f8f8, #777); box-shadow: 0 8px 24px #0007; }
+.brand-name { letter-spacing: .1em; }
+.brand-caption, .secure-chip, .login-copy p, .login-footer, .login-stats span { color: #a7a7a7; }
+.eyebrow-dot, .red-line, .footer-red { background: #f4f4f4; color: #f4f4f4; }
+.login-copy h1 em, .login-stats b, .text-button, .tag-red, .login-footer .footer-red { color: #f2f2f2; }
+.login-card-wrap { background: linear-gradient(145deg, #f0f0f0, #454545 46%, #111); box-shadow: 0 24px 74px #000b; }
+.login-card, .login-card-topline, .input-shell, .primary-button, .install-notice, .ios-guide-card, .aux-window { background: linear-gradient(145deg, #1d1d1d, #0d0d0d); }
+.primary-button { color: #080808; background: linear-gradient(135deg, #f7f7f7, #999); box-shadow: 0 10px 28px #0008; }
+.primary-button:hover { color: #050505; background: linear-gradient(135deg, #fff, #c2c2c2); }
+.card-icon, .notice-pulse, .ios-guide-icon { color: #f4f4f4; border-color: #6d6d6d; background: linear-gradient(145deg, #454545, #161616); }
+.app-shell, .admin-shell, .aux-page { background: linear-gradient(135deg, #050505 0%, #1d1d1d 54%, #060606 100%); }
+.app-sidebar, .admin-sidebar, .mobile-header, .bottom-nav { background: linear-gradient(180deg, #111 0%, #070707 100%); border-color: #373737; }
+.sidebar-link.active, .bottom-nav button.active, .os-option.selected, .performance-option.selected { color: #fff; border-color: #777; background: linear-gradient(145deg, #3a3a3a, #171717); }
+.sidebar-link.active svg, .sidebar-link i, .hero-copy h1 strong, .hero-meta svg, .step-index, .info-feature h2 em, .value-icon, .history-values, .logout-button, .aux-kicker { color: #f2f2f2 !important; }
+.hero-panel, .info-feature, .result-card, .contact-panel, .config-card, .profile-card, .security-card, .admin-panel-card, .stat-card { background: linear-gradient(135deg, #242424, #101010 72%); border-color: #4a4a4a; }
+.generate-button, .aux-action-row button { color: #080808; border-color: #8b8b8b; background: linear-gradient(135deg, #f4f4f4, #8d8d8d); box-shadow: 0 10px 25px #0008; }
+.generate-button:hover, .aux-action-row button:hover { color: #050505; background: linear-gradient(135deg, #fff, #bdbdbd); }
+.install-notice, .ios-guide-card { border-color: #5d5d5d; box-shadow: 0 18px 55px #000b; }
+.install-notice > button:not(.notice-close) { color: #070707; background: linear-gradient(135deg, #f7f7f7, #929292); }
+
+@media (max-width: 760px) {
+  .login-shell { min-height: 100svh; overflow-x: hidden; overflow-y: auto; }
+  .login-header, .login-footer { width: calc(100% - 28px); }
+  .login-header { padding-top: max(16px, env(safe-area-inset-top)); }
+  .login-header .brand-name { font-size: 15px; letter-spacing: .08em; }
+  .login-header .brand-caption { font-size: 7px; }
+  .login-content { display: flex; flex-direction: column; align-items: stretch; gap: 18px; width: calc(100% - 28px); margin: 0 auto; padding: 18px 0 22px; }
+  .login-copy { max-width: none; margin: 0; }
+  .login-photo { width: 100%; height: clamp(128px, 22svh, 170px); margin-bottom: 16px; border-radius: 13px; }
+  .login-photo figcaption { right: 11px; bottom: 10px; font-size: 7px; }
+  .login-copy h1 { margin: 16px 0 10px; font-size: clamp(42px, 15vw, 58px); line-height: .9; }
+  .login-copy p { max-width: 34em; font-size: 12px; line-height: 1.5; }
+  .login-stats { gap: 24px; margin-top: 18px; }
+  .login-stats b { font-size: 21px; }
+  .login-card-wrap { margin: 0; }
+  .login-card-topline { height: 32px; padding: 0 12px; font-size: 7px; }
+  .login-card { min-height: 0; padding: 20px 17px 15px; }
+  .login-card h2 { font-size: 17px; }
+  .card-description { margin: 14px 0 18px; font-size: 11px; }
+  .login-form { gap: 13px; }
+  .login-button { margin-top: 2px; }
+  .admin-toggle { margin-top: 15px; }
+  .secure-footer { flex-wrap: wrap; gap: 6px; margin-top: 19px; padding-top: 13px; font-size: 7px; }
+  .login-footer { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+  .login-footer span:nth-child(2) { display: none; }
+}
+
+@media (max-width: 380px), (max-height: 700px) and (max-width: 760px) {
+  .login-content { gap: 15px; padding-top: 14px; }
+  .login-photo { height: 112px; margin-bottom: 12px; }
+  .login-copy h1 { margin: 12px 0 8px; font-size: 43px; }
+  .login-copy p { font-size: 11px; }
+  .login-stats { margin-top: 13px; }
+  .login-card { padding: 17px 15px 13px; }
+  .card-description { margin: 10px 0 14px; }
+  .secure-footer { margin-top: 14px; padding-top: 11px; }
+}

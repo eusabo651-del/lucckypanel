@@ -1,17 +1,17 @@
 {
-  "name": "PURPOU SENSI",
-  "short_name": "PURPOU SENSI",
-  "description": "Gerador de sensibilidades personalizadas para jogadores.",
+  "name": "LUCKY REI",
+  "short_name": "LUCKY REI",
+  "description": "Painel de sensibilidade personalizado para jogadores.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#08090b",
-  "theme_color": "#08090b",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
   "lang": "pt-BR",
   "icons": [
     {
-      "src": "/icon.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
+      "src": "/lucky-rei-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
