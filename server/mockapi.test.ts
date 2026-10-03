@@ -28,7 +28,7 @@ describe("MockAPI key expiration", () => {
     try {
       const key = await createMockKey({ username: "hour_test", planId: "hourly", durationValue: 1, durationUnit: "hours" });
       expect(key.type).toBe("hourly");
-      expect(posted).toMatchObject({ type: "hourly", expire: 1, used: false, activatedAt: 0, expiresAt: 0, status: "active" });
+      expect(posted).toMatchObject({ username: "hour_test", type: "hourly", expire: 1, used: false, activatedAt: 0, expiresAt: 0, status: "active" });
       expect(posted).not.toHaveProperty("durationUnit");
     } finally {
       fetch.mockRestore();

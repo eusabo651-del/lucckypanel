@@ -191,7 +191,7 @@ export default async function trpc(req: any, res: any) {
       const type = planId === "hourly" ? "hourly" : planId === "weekly" ? "weekly" : planId === "perm" ? "perm" : "daily";
       const permanent = type === "perm";
       const expire = permanent ? 0 : type === "hourly" ? 1 : type === "weekly" ? 7 : 1;
-      const created = await mockRequest<MockKey>("", { method: "POST", body: JSON.stringify({ key: `LUCK-${type}-${randomBytes(6).toString("hex").toUpperCase()}`, used: false, device: "", expire, type, createdAt: now, activatedAt: 0, expiresAt: 0, status: "active" }) });
+      const created = await mockRequest<MockKey>("", { method: "POST", body: JSON.stringify({ key: `LUCK-${type}-${randomBytes(6).toString("hex").toUpperCase()}`, username: String(data.username ?? "").trim(), used: false, device: "", expire, type, createdAt: now, activatedAt: 0, expiresAt: 0, status: "active" }) });
       return ok(res, asLicense(created));
     }
     const id = Number(data.id); const current = match(id);
