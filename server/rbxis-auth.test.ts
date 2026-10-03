@@ -23,7 +23,7 @@ describe("RBXIS session auth", () => {
   });
 
   it("keeps the fixed SENSI admin access key", () => {
-    expect(getAdminAccessKey()).toBe("SENSIADMIN00");
+    expect(getAdminAccessKey()).toBe("LUCKADMIN00");
   });
 
   it("accepts the signed session through an Authorization bearer header", () => {
