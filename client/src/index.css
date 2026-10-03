@@ -359,3 +359,44 @@ html, body { background: linear-gradient(135deg, #030303 0%, #1b1b1b 52%, #05050
   .aux-rail button { width: 36px; height: 36px; }
   .aux-content { padding-right: 14px; padding-left: 14px; }
 }
+
+/* Ajuste global mobile: usar a largura real do aparelho sem esticar os cartões na vertical. */
+@media (max-width: 760px) {
+  html, body, #root { width: 100%; min-width: 320px; overflow-x: hidden; }
+  .app-shell { flex-direction: column; width: 100%; min-height: 100svh; }
+  .mobile-header { flex: 0 0 61px; width: 100%; }
+  .app-main { width: 100%; min-width: 0; padding: 0 0 calc(84px + env(safe-area-inset-bottom)); }
+  .page-view { width: calc(100% - 24px); max-width: 620px; margin: 0 auto; padding: 22px 0 26px; }
+  .admin-shell { flex-direction: column; width: 100%; min-height: 100svh; }
+  .admin-main { width: 100%; min-width: 0; }
+  .admin-content { width: calc(100% - 24px); max-width: 720px; padding: 22px 0 32px; }
+  .page-heading { margin-bottom: 22px; }
+  .empty-state { padding: 42px 18px; }
+  .info-feature { min-height: 0; }
+  .info-points { gap: 10px 16px; margin-top: 20px; }
+  .profile-grid { gap: 16px 12px; padding-top: 20px; }
+  .bottom-nav { right: max(10px, env(safe-area-inset-right)); bottom: max(10px, env(safe-area-inset-bottom)); left: max(10px, env(safe-area-inset-left)); }
+
+  /* O terceiro separador (grade) ocupa a largura disponível em 2 × 2 cartões compactos. */
+  .aux-page { width: 100%; padding: 12px; }
+  .aux-window { width: 100%; }
+  .aux-module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .aux-module { flex-direction: row; align-items: center; min-width: 0; min-height: 76px; gap: 9px; padding: 10px; }
+  .aux-module > svg { width: 18px; height: 18px; flex: 0 0 auto; }
+  .aux-module span { min-width: 0; flex: 1; }
+  .aux-module b { font-size: 10px; line-height: 1.25; }
+  .aux-module small { font-size: 8px; line-height: 1.3; }
+  .aux-module i { align-self: center; width: 21px; height: 21px; flex: 0 0 auto; }
+  .aux-page.quick-exit-active { min-height: calc(100svh - 61px); }
+}
+
+@media (max-width: 390px) {
+  .page-view { width: calc(100% - 20px); padding-top: 18px; }
+  .admin-content { width: calc(100% - 20px); }
+  .aux-page { padding-right: 8px; padding-left: 8px; }
+  .aux-content { padding-right: 11px; padding-left: 11px; }
+  .aux-module-grid { gap: 7px; }
+  .aux-module { gap: 7px; padding: 9px 7px; }
+  .aux-module > svg { width: 16px; height: 16px; }
+  .aux-module i { width: 19px; height: 19px; }
+}
