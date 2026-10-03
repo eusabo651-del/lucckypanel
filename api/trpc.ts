@@ -1,6 +1,5 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import superjson from "superjson";
-import { activationExpirySeconds } from "../shared/rbxis";
 
 type MockKey = {
   id?: string; key: string; username?: string; used?: boolean; device?: string; expire?: number;
@@ -88,6 +87,55 @@ function bodyInput(input: any) {
 }
 function durationDays(value: number, unit: string) { return unit === "hours" ? value / 24 : unit === "days" ? value : unit === "weeks" ? value * 7 : unit === "months" ? value * 30 : value * 365; }
 function addDuration(start: Date, value: number, unit: string) { const d = new Date(start); if (unit === "hours") d.setTime(d.getTime() + value * 60 * 60 * 1000); else if (unit === "days") d.setDate(d.getDate() + value); else if (unit === "weeks") d.setDate(d.getDate() + value * 7); else if (unit === "months") d.setMonth(d.getMonth() + value); else d.setFullYear(d.getFullYear() + value); return Math.floor(d.getTime() / 1000); }
+function activationExpirySeconds(type: string, expire: number, activatedAt: number) {
+  if (type === "perm") return 0;
+  const secondsPerUnit = type === "hourly" ? 60 * 60 : 24 * 60 * 60;
+  return activatedAt + Math.max(1, Number(expire) || 1) * secondsPerUnit;
+}
+async function notifyInvalidAdminLogin(req: any) {
+  const webhook = process.env.DISCORD_ADMIN_LOGIN_WEBHOOK?.trim();
+  if (!webhook) return;
+
+  let url: URL;
+  try {
+    url = new URL(webhook);
+    if (url.protocol !== "https:" || !["discord.com", "discordapp.com"].includes(url.hostname) || !url.pathname.startsWith("/api/webhooks/")) return;
+  } catch {
+    return;
+  }
+
+  const forwarded = req.headers?.["x-forwarded-for"] ?? req.headers?.["x-real-ip"] ?? "";
+  const ip = String(forwarded).split(",")[0].trim().slice(0, 64) || "indisponível";
+  const userAgent = String(req.headers?.["user-agent"] ?? "indisponível").replace(/[\r\n]/g, " ").slice(0, 180);
+  const timestamp = new Date().toISOString();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 2500);
+
+  try {
+    await fetch(url.toString(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        embeds: [{
+          title: "Tentativa de login administrativo inválida",
+          color: 0x777777,
+          fields: [
+            { name: "Horário (UTC)", value: timestamp, inline: true },
+            { name: "IP de origem", value: ip, inline: true },
+            { name: "Navegador", value: userAgent },
+          ],
+          timestamp,
+        }],
+        allowed_mentions: { parse: [] },
+      }),
+      signal: controller.signal,
+    });
+  } catch {
+    // A indisponibilidade do webhook nunca deve impedir a resposta de login.
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 function buildSensitivity(seed: string, device = "") {
   const digest = createHash("sha256").update(seed).digest();
   const n = (index: number) => digest[index] ?? 0;
@@ -122,7 +170,10 @@ export default async function trpc(req: any, res: any) {
     const data = bodyInput(input);
 
     if (path === "auth.adminLogin") {
-      if (String(data.adminKey ?? "").trim() !== ADMIN_KEY) return fail(res, 401, "Chave administrativa inválida");
+      if (String(data.adminKey ?? "").trim() !== ADMIN_KEY) {
+        await notifyInvalidAdminLogin(req);
+        return fail(res, 401, "Chave administrativa inválida");
+      }
       const sessionToken = tokenForAdmin();
       res.setHeader("Set-Cookie", `rbxis_session_v3=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`);
       return ok(res, { success: true, username: ADMIN_KEY, sessionToken });
