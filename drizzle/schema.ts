@@ -26,7 +26,7 @@ export const productLicenses = mysqlTable("product_licenses", {
   accessKey: varchar("accessKey", { length: 80 }).notNull().unique(),
   planId: varchar("planId", { length: 40 }).notNull(),
   durationValue: int("durationValue").notNull(),
-  durationUnit: mysqlEnum("durationUnit", ["days", "weeks", "months", "years"]).notNull(),
+  durationUnit: mysqlEnum("durationUnit", ["hours", "days", "weeks", "months", "years"]).notNull(),
   expiresAt: timestamp("expiresAt").notNull(),
   status: mysqlEnum("status", ["active", "revoked", "blocked"]).default("active").notNull(),
   deviceId: varchar("deviceId", { length: 160 }),

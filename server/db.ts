@@ -1,5 +1,8 @@
 import { InsertProductLicense, InsertSensitivityHistory, InsertUser, ProductLicense } from "../drizzle/schema";
 import { createMockKey, deleteMockKey, findMockKey, getMockKey, listMockKeys, mockKeyId, mockKeyToLicense, updateMockKey } from "./mockapi";
+import { activationExpirySeconds, DURATION_UNITS } from "../shared/rbxis";
+
+type DurationUnit = (typeof DURATION_UNITS)[number];
 
 type HistoryRecord = {
   id: number;
@@ -21,7 +24,7 @@ export async function getDb() { return null; }
 export async function upsertUser(_user: InsertUser): Promise<void> { return; }
 export async function getUserByOpenId(_openId: string) { return undefined; }
 
-export async function createProductLicense(input: { username: string; planId: string; durationValue: number; durationUnit: "days" | "weeks" | "months" | "years"; expiresAt: Date }) {
+export async function createProductLicense(input: { username: string; planId: string; durationValue: number; durationUnit: DurationUnit; expiresAt: Date }) {
   return mockKeyToLicense(await createMockKey(input));
 }
 
@@ -43,7 +46,12 @@ export async function getActiveLicenseSession(userId: number, licenseId: number)
 
 export async function markLicenseLoggedIn(id: number, deviceId: string) {
   const key = (await listMockKeys()).find(item => mockKeyToLicense(item).id === id);
-  if (key?.id) await updateMockKey(key.id, { device: deviceId, used: true, activatedAt: key.activatedAt || Math.floor(Date.now() / 1000), onlineAt: Math.floor(Date.now() / 1000) });
+  if (key?.id) {
+    const now = Math.floor(Date.now() / 1000);
+    const activatedAt = key.activatedAt || now;
+    const expiresAt = key.expiresAt || activationExpirySeconds(key.type, key.expire, activatedAt);
+    await updateMockKey(key.id, { device: deviceId, used: true, activatedAt, expiresAt, onlineAt: now });
+  }
 }
 
 export async function listProductLicenses() {
@@ -55,7 +63,7 @@ export async function getProductLicense(id: number) {
   return key ? mockKeyToLicense(key) : undefined;
 }
 
-export async function updateProductLicense(id: number, values: Partial<Pick<ProductLicense, "status" | "planId" | "durationValue" | "durationUnit" | "expiresAt" | "deviceId" | "lastLoginAt">>) {
+export async function updateProductLicense(id: number, values: Partial<Pick<ProductLicense, "status" | "planId" | "durationValue" | "expiresAt" | "deviceId" | "lastLoginAt">> & { durationUnit?: DurationUnit }) {
   const key = (await listMockKeys()).find(item => mockKeyToLicense(item).id === id);
   if (!key?.id) throw new Error("Licença não encontrada");
   const patch: Record<string, unknown> = {};
@@ -63,7 +71,14 @@ export async function updateProductLicense(id: number, values: Partial<Pick<Prod
   if (values.deviceId !== undefined) { patch.device = values.deviceId ?? ""; if (values.deviceId === null) patch.used = false; }
   if (values.lastLoginAt) patch.activatedAt = Math.floor(new Date(values.lastLoginAt).getTime() / 1000);
   if (values.expiresAt) patch.expiresAt = Math.floor(new Date(values.expiresAt).getTime() / 1000);
-  if (values.planId) patch.type = values.planId === "week" ? "weekly" : values.planId === "month" ? "monthly" : values.planId === "year" ? "yearly" : values.planId;
+  if (values.planId) {
+    const nextType = values.planId === "week" ? "weekly" : values.planId === "month" ? "monthly" : values.planId === "year" ? "yearly" : values.planId;
+    patch.type = nextType;
+    if (nextType === "hourly" && key.type !== "hourly") {
+      patch.expire = 1;
+      patch.expiresAt = key.activatedAt ? activationExpirySeconds("hourly", 1, key.activatedAt) : 0;
+    }
+  }
   if (values.durationValue) patch.expire = values.durationValue;
   return mockKeyToLicense(await updateMockKey(key.id, patch));
 }

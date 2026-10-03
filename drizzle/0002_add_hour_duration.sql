@@ -1,0 +1,1 @@
+ALTER TABLE `product_licenses` MODIFY COLUMN `durationUnit` enum('hours','days','weeks','months','years') NOT NULL;

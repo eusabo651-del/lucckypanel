@@ -1,5 +1,6 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import superjson from "superjson";
+import { activationExpirySeconds } from "../shared/rbxis";
 
 type MockKey = {
   id?: string; key: string; username?: string; used?: boolean; device?: string; expire?: number;
@@ -76,7 +77,7 @@ function numericId(value: MockKey) {
 function asLicense(value: MockKey) {
   const key = normalize(value);
   const expires = key.expiresAt ? new Date(key.expiresAt * 1000) : null;
-  const durationUnit = key.type === "weekly" ? "weeks" : key.type === "monthly" ? "months" : key.type === "yearly" ? "years" : "days";
+  const durationUnit = key.type === "hourly" ? "hours" : key.type === "weekly" ? "weeks" : key.type === "monthly" ? "months" : key.type === "yearly" ? "years" : "days";
   return { id: numericId(key), userId: numericId({ ...key, key: `${key.key}:user` }), username: key.username ?? key.key, accessKey: key.key, planId: key.type ?? "custom", durationValue: key.expire ?? 0, durationUnit, expiresAt: expires, status: key.status ?? (key.expiresAt && key.expiresAt <= Math.floor(Date.now() / 1000) ? "revoked" : "active"), deviceId: key.device || null, lastLoginAt: key.activatedAt ? new Date(key.activatedAt * 1000) : null, createdAt: new Date((key.createdAt ?? 0) * 1000), updatedAt: new Date() };
 }
 function bodyInput(input: any) {
@@ -85,8 +86,8 @@ function bodyInput(input: any) {
   }
   return input?.json ?? input ?? {};
 }
-function durationDays(value: number, unit: string) { return unit === "days" ? value : unit === "weeks" ? value * 7 : unit === "months" ? value * 30 : value * 365; }
-function addDuration(start: Date, value: number, unit: string) { const d = new Date(start); if (unit === "days") d.setDate(d.getDate() + value); else if (unit === "weeks") d.setDate(d.getDate() + value * 7); else if (unit === "months") d.setMonth(d.getMonth() + value); else d.setFullYear(d.getFullYear() + value); return Math.floor(d.getTime() / 1000); }
+function durationDays(value: number, unit: string) { return unit === "hours" ? value / 24 : unit === "days" ? value : unit === "weeks" ? value * 7 : unit === "months" ? value * 30 : value * 365; }
+function addDuration(start: Date, value: number, unit: string) { const d = new Date(start); if (unit === "hours") d.setTime(d.getTime() + value * 60 * 60 * 1000); else if (unit === "days") d.setDate(d.getDate() + value); else if (unit === "weeks") d.setDate(d.getDate() + value * 7); else if (unit === "months") d.setMonth(d.getMonth() + value); else d.setFullYear(d.getFullYear() + value); return Math.floor(d.getTime() / 1000); }
 function buildSensitivity(seed: string, device = "") {
   const digest = createHash("sha256").update(seed).digest();
   const n = (index: number) => digest[index] ?? 0;
@@ -138,8 +139,9 @@ export default async function trpc(req: any, res: any) {
       if (key.expiresAt && key.expiresAt <= Math.floor(Date.now() / 1000)) return fail(res, 403, "Esta key expirou");
       if (key.device && key.device !== deviceId) return fail(res, 403, "Esta key já está vinculada a outro dispositivo");
       const now = Math.floor(Date.now() / 1000);
-      const activationExpiresAt = key.type === "perm" ? 0 : now + Math.max(1, Number(key.expire || 1)) * 86400;
-      const updated = normalize(await mockRequest<MockKey>(`/${encodeURIComponent(key.id ?? key.key)}`, { method: "PUT", body: JSON.stringify({ device: deviceId, used: true, activatedAt: key.activatedAt || now, expiresAt: key.expiresAt || activationExpiresAt, onlineAt: now }) }));
+      const activatedAt = key.activatedAt || now;
+      const activationExpiresAt = key.expiresAt || activationExpirySeconds(key.type ?? "daily", Number(key.expire || 1), activatedAt);
+      const updated = normalize(await mockRequest<MockKey>(`/${encodeURIComponent(key.id ?? key.key)}`, { method: "PUT", body: JSON.stringify({ device: deviceId, used: true, activatedAt, expiresAt: activationExpiresAt, onlineAt: now }) }));
       const sessionToken = tokenForUser(updated);
       res.setHeader("Set-Cookie", `rbxis_session_v3=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`);
       return ok(res, { success: true, username: updated.key, expiresAt: updated.expiresAt ? new Date(updated.expiresAt * 1000) : null, sessionToken });
@@ -180,10 +182,16 @@ export default async function trpc(req: any, res: any) {
     }
     const match = (id: number) => raw.find((value) => numericId(value) === id);
     if (path === "admin.createLicense") {
-      const days = durationDays(Number(data.durationValue), String(data.durationUnit)); const now = Math.floor(Date.now() / 1000);
-      const type = data.planId === "weekly" ? "weekly" : data.planId === "perm" ? "perm" : "daily";
+      const planId = String(data.planId ?? "daily");
+      const durationValue = Number(data.durationValue);
+      const durationUnit = String(data.durationUnit ?? "days");
+      if (planId === "hourly" && (durationValue !== 1 || durationUnit !== "hours")) return fail(res, 400, "O plano de 1 hora precisa ter duração fixa de 1 hora");
+      if (planId !== "hourly" && durationUnit === "hours") return fail(res, 400, "A unidade horas é reservada ao plano de 1 hora");
+      const now = Math.floor(Date.now() / 1000);
+      const type = planId === "hourly" ? "hourly" : planId === "weekly" ? "weekly" : planId === "perm" ? "perm" : "daily";
       const permanent = type === "perm";
-      const created = await mockRequest<MockKey>("", { method: "POST", body: JSON.stringify({ key: `LUCK-${type}-${randomBytes(6).toString("hex").toUpperCase()}`, used: false, device: "", expire: permanent ? 0 : type === "weekly" ? 7 : 1, type, createdAt: now, activatedAt: 0, expiresAt: 0, status: "active" }) });
+      const expire = permanent ? 0 : type === "hourly" ? 1 : type === "weekly" ? 7 : 1;
+      const created = await mockRequest<MockKey>("", { method: "POST", body: JSON.stringify({ key: `LUCK-${type}-${randomBytes(6).toString("hex").toUpperCase()}`, used: false, device: "", expire, type, createdAt: now, activatedAt: 0, expiresAt: 0, status: "active" }) });
       return ok(res, asLicense(created));
     }
     const id = Number(data.id); const current = match(id);
@@ -194,7 +202,7 @@ export default async function trpc(req: any, res: any) {
     else if (path === "admin.blockLicense") patch.status = "blocked";
     else if (path === "admin.resetDevice") { patch.device = ""; patch.activatedAt = 0; }
     else if (path === "admin.extendLicense") patch.expiresAt = addDuration(new Date((current.expiresAt ?? 0) * 1000), Number(data.durationValue), String(data.durationUnit));
-    else if (path === "admin.updateLicense") { if (data.status) patch.status = data.status; if (data.planId) patch.type = data.planId; if (data.durationValue && data.durationUnit) { patch.expire = durationDays(Number(data.durationValue), String(data.durationUnit)); patch.expiresAt = addDuration(new Date(), Number(data.durationValue), String(data.durationUnit)); } }
+    else if (path === "admin.updateLicense") { if (data.status) patch.status = data.status; if (data.planId) { patch.type = data.planId; if (data.planId === "hourly" && current.type !== "hourly") { patch.expire = 1; patch.expiresAt = current.activatedAt ? activationExpirySeconds("hourly", 1, current.activatedAt) : 0; } } if (data.durationValue && data.durationUnit) { patch.expire = (data.planId === "hourly" || (!data.planId && current.type === "hourly")) && data.durationUnit === "hours" ? Number(data.durationValue) : durationDays(Number(data.durationValue), String(data.durationUnit)); patch.expiresAt = addDuration(new Date(), Number(data.durationValue), String(data.durationUnit)); } }
     else return fail(res, 404, `Procedure not found: ${path}`);
     return ok(res, asLicense(await mockRequest<MockKey>(`/${encodeURIComponent(current.id ?? current.key)}`, { method: "PUT", body: JSON.stringify(patch) })));
   } catch (error: any) { return fail(res, 500, error?.message ?? "Internal server error"); }

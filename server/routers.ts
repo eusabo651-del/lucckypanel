@@ -21,6 +21,14 @@ import { publicProcedure, rbxisAdminProcedure, rbxisProcedure, router } from "./
 
 const durationUnitSchema = z.enum(DURATION_UNITS);
 const statusSchema = z.enum(["active", "revoked", "blocked"]);
+const createLicenseSchema = z.object({ username: z.string().trim().min(2).max(60), planId: z.string().min(1).max(40), durationValue: z.number().int().min(1).max(3650), durationUnit: durationUnitSchema }).superRefine((input, context) => {
+  if (input.planId === "hourly" && (input.durationValue !== 1 || input.durationUnit !== "hours")) {
+    context.addIssue({ code: "custom", path: ["durationUnit"], message: "O plano de 1 hora precisa ter duração fixa de 1 hora" });
+  }
+  if (input.planId !== "hourly" && input.durationUnit === "hours") {
+    context.addIssue({ code: "custom", path: ["durationUnit"], message: "A unidade horas é reservada ao plano de 1 hora" });
+  }
+});
 
 function normalizeDeviceId(value: string) {
   return value.trim().slice(0, 160);
@@ -38,8 +46,9 @@ function buildSensitivity(seedInput: string) {
   };
 }
 
-function addDuration(start: Date, value: number, unit: "days" | "weeks" | "months" | "years") {
+function addDuration(start: Date, value: number, unit: (typeof DURATION_UNITS)[number]) {
   const date = new Date(start);
+  if (unit === "hours") date.setTime(date.getTime() + value * 60 * 60 * 1000);
   if (unit === "days") date.setDate(date.getDate() + value);
   if (unit === "weeks") date.setDate(date.getDate() + value * 7);
   if (unit === "months") date.setMonth(date.getMonth() + value);
@@ -122,7 +131,7 @@ export const appRouter = router({
     stats: rbxisAdminProcedure.query(() => getAdminStats()),
     licenses: rbxisAdminProcedure.query(() => listProductLicenses()),
     createLicense: rbxisAdminProcedure
-      .input(z.object({ username: z.string().trim().min(2).max(60), planId: z.string().min(1).max(40), durationValue: z.number().int().min(1).max(3650), durationUnit: durationUnitSchema }))
+      .input(createLicenseSchema)
       .mutation(async ({ input }) => {
         const expiresAt = addDuration(new Date(), input.durationValue, input.durationUnit);
         try {

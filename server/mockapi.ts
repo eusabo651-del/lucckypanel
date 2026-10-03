@@ -1,3 +1,5 @@
+import { DURATION_UNITS } from "../shared/rbxis";
+
 export type MockKey = {
   id?: string;
   key: string;
@@ -75,11 +77,12 @@ export async function findMockKey(_username: string, accessKey: string) {
   return keys.find(value => value.key.trim() === accessKey.trim());
 }
 
-export async function createMockKey(input: { username: string; planId: string; durationValue: number; durationUnit: "days" | "weeks" | "months" | "years" }) {
+export async function createMockKey(input: { username: string; planId: string; durationValue: number; durationUnit: (typeof DURATION_UNITS)[number] }) {
   const now = Math.floor(Date.now() / 1000);
-  const days = input.durationUnit === "days" ? input.durationValue : input.durationUnit === "weeks" ? input.durationValue * 7 : input.durationUnit === "months" ? input.durationValue * 30 : input.durationValue * 365;
-  const type = input.planId === "week" ? "weekly" : input.planId === "month" ? "monthly" : input.planId === "year" ? "yearly" : input.planId === "perm" ? "perm" : input.planId;
-  const value: MockKey = { key: `SENSI-${type}-${crypto.randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`, username: input.username, used: false, device: "", expire: days, type, createdAt: now, activatedAt: 0, expiresAt: 0, status: "active", onlineAt: 0, history: [] };
+  const days = input.durationUnit === "hours" ? input.durationValue / 24 : input.durationUnit === "days" ? input.durationValue : input.durationUnit === "weeks" ? input.durationValue * 7 : input.durationUnit === "months" ? input.durationValue * 30 : input.durationValue * 365;
+  const type = input.planId === "hour" || input.planId === "hourly" ? "hourly" : input.planId === "week" ? "weekly" : input.planId === "month" ? "monthly" : input.planId === "year" ? "yearly" : input.planId === "perm" ? "perm" : input.planId;
+  const expire = type === "hourly" ? input.durationValue : days;
+  const value: MockKey = { key: `SENSI-${type}-${crypto.randomUUID().replaceAll("-", "").slice(0, 12).toUpperCase()}`, username: input.username, used: false, device: "", expire, type, createdAt: now, activatedAt: 0, expiresAt: 0, status: "active", onlineAt: 0, history: [] };
   return fromRow(await request<any>("", { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(toRow(value)) }));
 }
 
@@ -104,6 +107,6 @@ export function mockKeyId(value: MockKey) {
 
 export function mockKeyToLicense(value: MockKey) {
   const expiresAt = value.expiresAt ? new Date(value.expiresAt * 1000) : new Date("2099-12-31T23:59:59Z");
-  const durationUnit = value.type === "weekly" ? "weeks" : value.type === "monthly" ? "months" : value.type === "yearly" ? "years" : "days";
+  const durationUnit = value.type === "hourly" ? "hours" : value.type === "weekly" ? "weeks" : value.type === "monthly" ? "months" : value.type === "yearly" ? "years" : "days";
   return { id: mockKeyId(value), userId: mockKeyId({ ...value, key: `${value.key}:user` }), username: value.username ?? value.key, accessKey: value.key, planId: value.type, durationValue: value.expire, durationUnit, expiresAt, status: value.status ?? (value.expiresAt && value.expiresAt <= Math.floor(Date.now() / 1000) ? "revoked" : "active"), deviceId: value.device || null, lastLoginAt: value.activatedAt ? new Date(value.activatedAt * 1000) : null, createdAt: new Date(value.createdAt * 1000), updatedAt: new Date(), history: value.history ?? [] } as any;
 }

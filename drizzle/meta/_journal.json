@@ -15,6 +15,13 @@
       "when": 1788487524937,
       "tag": "0001_funny_sentinel",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1791046229237,
+      "tag": "0002_add_hour_duration",
+      "breakpoints": true
     }
   ]
 }
