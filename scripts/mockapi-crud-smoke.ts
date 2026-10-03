@@ -1,7 +1,7 @@
 import { createMockKey, deleteMockKey, getMockKey } from "../server/mockapi";
 
 const created = await createMockKey({ username: `__smoke_${Date.now()}`, planId: "week", durationValue: 7, durationUnit: "days" });
-if (!created.id || !created.key.startsWith("SENSI-weekly-")) throw new Error("MockAPI create smoke test failed");
+if (!created.id || !created.key.startsWith("LUCK-weekly-")) throw new Error("MockAPI create smoke test failed");
 const fetched = await getMockKey(created.id);
 if (!fetched || fetched.key !== created.key) throw new Error("MockAPI read smoke test failed");
 await deleteMockKey(created.id);
