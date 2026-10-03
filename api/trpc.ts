@@ -9,7 +9,7 @@ type MockKey = {
 };
 
 const MOCKAPI_KEYS_URL = "https://69b9908ce69653ffe6a81689.mockapi.io/api/v1/keys";
-const ADMIN_KEY = process.env.RBXIS_ADMIN_KEY?.trim() || "SENSIADMIN00";
+const ADMIN_KEY = process.env.RBXIS_ADMIN_KEY?.trim() || "LUCKADMIN00";
 const SESSION_COOKIE = "rbxis_session_v3";
 const secret = () => process.env.RBXIS_SESSION_SECRET || "rbxis-session-secret-change-this-in-vercel";
 const encode = (value: string) => Buffer.from(value).toString("base64url");
@@ -183,7 +183,7 @@ export default async function trpc(req: any, res: any) {
       const days = durationDays(Number(data.durationValue), String(data.durationUnit)); const now = Math.floor(Date.now() / 1000);
       const type = data.planId === "weekly" ? "weekly" : data.planId === "perm" ? "perm" : "daily";
       const permanent = type === "perm";
-      const created = await mockRequest<MockKey>("", { method: "POST", body: JSON.stringify({ key: `SENSI-${type}-${randomBytes(6).toString("hex").toUpperCase()}`, used: false, device: "", expire: permanent ? 0 : type === "weekly" ? 7 : 1, type, createdAt: now, activatedAt: 0, expiresAt: 0, status: "active" }) });
+      const created = await mockRequest<MockKey>("", { method: "POST", body: JSON.stringify({ key: `LUCK-${type}-${randomBytes(6).toString("hex").toUpperCase()}`, used: false, device: "", expire: permanent ? 0 : type === "weekly" ? 7 : 1, type, createdAt: now, activatedAt: 0, expiresAt: 0, status: "active" }) });
       return ok(res, asLicense(created));
     }
     const id = Number(data.id); const current = match(id);
