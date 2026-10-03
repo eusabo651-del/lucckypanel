@@ -400,3 +400,25 @@ html, body { background: linear-gradient(135deg, #030303 0%, #1b1b1b 52%, #05050
   .aux-module > svg { width: 16px; height: 16px; }
   .aux-module i { width: 19px; height: 19px; }
 }
+
+
+/* Ações globais de keys e confirmação visual de primeira ativação. */
+.license-toolbar-actions { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; }
+.license-action { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 36px; padding: 0 11px; border: 1px solid #30343c; border-radius: 7px; color: #d4d7dc; background: #15171c; font-size: 9px; font-weight: 800; white-space: nowrap; }
+.license-action:hover:not(:disabled) { border-color: #4d535e; color: #fff; background: #20232a; }
+.license-action.reset { border-color: #593b3b; color: #ffb5b5; background: #211516; }
+.license-action.reset:hover:not(:disabled) { border-color: #9b4b4b; background: #32191b; }
+.license-action:disabled { cursor: not-allowed; opacity: .45; }
+.activation-notice-backdrop { position: fixed; z-index: 120; inset: 0; display: grid; place-items: center; padding: 18px; background: #0008; backdrop-filter: blur(3px); }
+.activation-notice-card { width: min(320px, calc(100vw - 36px)); padding: 18px; border: 1px solid #e7e9ec; border-radius: 15px; color: #16191d; background: #fff; box-shadow: 0 20px 70px #0005; animation: activation-notice-in .18s ease-out; }
+.activation-notice-card h2 { margin: 0 0 15px; color: #18a957; font-size: 18px; font-weight: 800; letter-spacing: .04em; }
+.activation-hwid-label { display: block; margin-bottom: 6px; color: #72777f; font-size: 10px; font-weight: 800; letter-spacing: .12em; }
+.activation-notice-card code { display: block; overflow-wrap: anywhere; padding: 10px; border: 1px solid #e8eaed; border-radius: 8px; color: #252a31; background: #f6f7f8; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; line-height: 1.45; }
+.activation-notice-card button { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; min-height: 38px; margin-top: 14px; border: 1px solid #e1e4e7; border-radius: 8px; color: #30353c; background: #f7f8f9; font-size: 11px; font-weight: 700; }
+.activation-notice-card button:hover { background: #eceff1; }
+@keyframes activation-notice-in { from { opacity: 0; transform: translateY(7px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
+@media (max-width: 760px) {
+  .license-toolbar-actions { justify-content: space-between; margin-top: 10px; }
+  .license-toolbar-actions .toolbar-count { flex: 1 0 100%; }
+  .license-action { flex: 1; }
+}

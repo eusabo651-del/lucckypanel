@@ -11,6 +11,7 @@ import {
   getProductLicense,
   listHistoryForUser,
   listProductLicenses,
+  deleteAllProductLicenses,
   deleteProductLicense,
   markLicenseLoggedIn,
   toggleHistoryFavorite,
@@ -86,9 +87,10 @@ export const appRouter = router({
         if (row.license.deviceId && row.license.deviceId !== deviceId) {
           throw new TRPCError({ code: "FORBIDDEN", message: "Esta licença já está vinculada a outro dispositivo" });
         }
+        const activatedNow = !row.license.lastLoginAt;
         await markLicenseLoggedIn(row.license.id, deviceId);
         const sessionToken = setSessionCookie(ctx.req, ctx.res, { role: "user", userId: row.user.id, licenseId: row.license.id, username: row.license.username });
-        return { success: true as const, username: row.license.username, expiresAt: row.license.expiresAt, sessionToken };
+        return { success: true as const, username: row.license.username, expiresAt: row.license.expiresAt, sessionToken, activatedNow };
       }),
     adminLogin: publicProcedure
       .input(z.object({ adminKey: z.string().min(1) }))
@@ -130,6 +132,7 @@ export const appRouter = router({
   admin: router({
     stats: rbxisAdminProcedure.query(() => getAdminStats()),
     licenses: rbxisAdminProcedure.query(() => listProductLicenses()),
+    resetAll: rbxisAdminProcedure.input(z.object({ confirm: z.literal(true) })).mutation(() => deleteAllProductLicenses()),
     createLicense: rbxisAdminProcedure
       .input(createLicenseSchema)
       .mutation(async ({ input }) => {

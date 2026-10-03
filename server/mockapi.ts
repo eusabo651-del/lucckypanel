@@ -60,7 +60,19 @@ function toRow(value: Partial<MockKey>) {
 }
 
 export async function listMockKeys() {
-  const rows = await request<any[]>();
+  const rows: any[] = [];
+  const seen = new Set<string>();
+  for (let page = 1; page <= 1000; page++) {
+    const current = await request<any[]>(`?page=${page}&limit=100&sortBy=createdAt&order=desc`);
+    const fresh = current.filter(row => {
+      const id = String(row.id ?? row.key ?? "");
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+    rows.push(...fresh);
+    if (current.length < 100 || fresh.length === 0) break;
+  }
   return rows.map(fromRow);
 }
 
@@ -108,5 +120,5 @@ export function mockKeyId(value: MockKey) {
 export function mockKeyToLicense(value: MockKey) {
   const expiresAt = value.expiresAt ? new Date(value.expiresAt * 1000) : new Date("2099-12-31T23:59:59Z");
   const durationUnit = value.type === "hourly" ? "hours" : value.type === "weekly" ? "weeks" : value.type === "monthly" ? "months" : value.type === "yearly" ? "years" : "days";
-  return { id: mockKeyId(value), userId: mockKeyId({ ...value, key: `${value.key}:user` }), username: value.username ?? value.key, accessKey: value.key, planId: value.type, durationValue: value.expire, durationUnit, expiresAt, status: value.status ?? (value.expiresAt && value.expiresAt <= Math.floor(Date.now() / 1000) ? "revoked" : "active"), deviceId: value.device || null, lastLoginAt: value.activatedAt ? new Date(value.activatedAt * 1000) : null, createdAt: new Date(value.createdAt * 1000), updatedAt: new Date(), history: value.history ?? [] } as any;
+  return { id: mockKeyId(value), userId: mockKeyId({ ...value, key: `${value.key}:user` }), username: value.username ?? value.key, accessKey: value.key, planId: value.type, durationValue: value.expire, durationUnit, expiresAt, status: value.status ?? (value.expiresAt && value.expiresAt <= Math.floor(Date.now() / 1000) ? "revoked" : "active"), deviceId: value.device || null, used: Boolean(value.used || value.device || value.activatedAt), lastLoginAt: value.activatedAt ? new Date(value.activatedAt * 1000) : null, createdAt: new Date(value.createdAt * 1000), updatedAt: new Date(), history: value.history ?? [] } as any;
 }

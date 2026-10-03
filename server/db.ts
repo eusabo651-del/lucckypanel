@@ -89,6 +89,12 @@ export async function deleteProductLicense(id: number) {
   return deleteMockKey(key.id);
 }
 
+export async function deleteAllProductLicenses() {
+  const keys = await listMockKeys();
+  for (const key of keys) await deleteMockKey(key.id ?? key.key);
+  return { success: true as const, count: keys.length };
+}
+
 async function keyForUser(userId: number) {
   return (await listMockKeys()).find(item => mockKeyToLicense(item).userId === userId);
 }

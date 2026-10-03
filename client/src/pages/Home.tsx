@@ -66,6 +66,7 @@ const valueLabels: { key: keyof SensitivityValues; label: string; icon: string }
 
 type View = "home" | "history" | "favorites" | "auxilio" | "info" | "profile";
 type AdminView = "overview" | "licenses";
+const ACTIVATION_NOTICE_STORAGE_KEY = "rbxis_activation_notice_hwid_v1";
 
 function getDeviceId() {
   if (typeof window === "undefined") return "server-device";
@@ -74,6 +75,23 @@ function getDeviceId() {
   const value = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
   window.localStorage.setItem("rbxis-device-id", value);
   return value;
+}
+
+async function copyToClipboard(value: string) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+  const field = document.createElement("textarea");
+  field.value = value;
+  field.setAttribute("readonly", "");
+  field.style.position = "fixed";
+  field.style.opacity = "0";
+  document.body.appendChild(field);
+  field.select();
+  const copied = document.execCommand("copy");
+  field.remove();
+  if (!copied) throw new Error("Não foi possível acessar a área de transferência");
 }
 
 function formatDate(value: string | Date | null | undefined) {
@@ -111,7 +129,12 @@ function LoginScreen() {
   const [accessKey, setAccessKey] = useState("");
   useEffect(() => { navigator.serviceWorker?.register("/sw.js").catch(() => undefined); }, []);
   const login = trpc.auth.login.useMutation({
-    onSuccess: data => { localStorage.removeItem("rbxis_admin_mode_v3"); localStorage.setItem("rbxis_session_token_v3", data.sessionToken); window.location.reload(); },
+    onSuccess: data => {
+      localStorage.removeItem("rbxis_admin_mode_v3");
+      localStorage.setItem("rbxis_session_token_v3", data.sessionToken);
+      if (data.activatedNow) localStorage.setItem(ACTIVATION_NOTICE_STORAGE_KEY, getDeviceId());
+      window.location.reload();
+    },
     onError: error => toast.error(error.message),
   });
   const adminLogin = trpc.auth.adminLogin.useMutation({
@@ -296,6 +319,7 @@ function AdminLicenses() {
   const remove = trpc.admin.deleteLicense.useMutation({ onSuccess: () => { licenses.refetch(); stats.refetch(); toast.success("Key excluída da MockAPI"); }, onError: error => toast.error(error.message) });
   const block = trpc.admin.blockLicense.useMutation({ onSuccess: () => { licenses.refetch(); stats.refetch(); toast.success("Usuário bloqueado"); } });
   const resetDevice = trpc.admin.resetDevice.useMutation({ onSuccess: () => { licenses.refetch(); toast.success("Vínculo de dispositivo resetado"); } });
+  const resetAll = trpc.admin.resetAll.useMutation({ onSuccess: data => { licenses.refetch(); stats.refetch(); toast.success(`${data.count} keys excluídas da MockAPI`); }, onError: error => toast.error(error.message) });
   const [formOpen, setFormOpen] = useState(false);
   const [createdKey, setCreatedKey] = useState("");
   const [username, setUsername] = useState("");
@@ -303,14 +327,26 @@ function AdminLicenses() {
   const [durationValue, setDurationValue] = useState(30);
   const [durationUnit, setDurationUnit] = useState<(typeof DURATION_UNITS)[number]>("days");
   const [query, setQuery] = useState("");
-  const filtered = (licenses.data ?? []).filter(item => String(item.username ?? item.accessKey ?? "").toLowerCase().includes(query.toLowerCase()) || String(item.accessKey ?? "").toLowerCase().includes(query.toLowerCase()));
+  const allLicenses = licenses.data ?? [];
+  const filtered = allLicenses.filter(item => String(item.username ?? item.accessKey ?? "").toLowerCase().includes(query.toLowerCase()) || String(item.accessKey ?? "").toLowerCase().includes(query.toLowerCase()));
+  const copyAllKeys = async () => {
+    const text = allLicenses.map(item => `${item.accessKey}${item.used || item.deviceId || item.lastLoginAt ? " (usada)" : ""}`).filter(Boolean).join("\n");
+    if (!text) { toast.info("Não há keys para copiar"); return; }
+    try { await copyToClipboard(text); toast.success(`${allLicenses.length} keys copiadas`); }
+    catch { toast.error("Não foi possível copiar as keys"); }
+  };
+  const confirmResetAll = () => {
+    const count = allLicenses.length;
+    if (!count) { toast.info("Não há keys para excluir"); return; }
+    if (window.confirm(`ATENÇÃO: isso excluirá permanentemente todas as ${count} keys da MockAPI. Essa ação não pode ser desfeita. Deseja continuar?`)) resetAll.mutate({ confirm: true });
+  };
   const submit = (event: React.FormEvent) => { event.preventDefault(); create.mutate({ username, planId, durationValue, durationUnit }); };
   const handlePlanChange = (nextPlanId: string) => {
     setPlanId(nextPlanId);
     if (nextPlanId === "hourly") { setDurationValue(1); setDurationUnit("hours"); }
     else if (planId === "hourly") { setDurationValue(1); setDurationUnit("days"); }
   };
-  return <div className="admin-content"><div className="admin-heading"><div><span className="eyebrow"><span className="eyebrow-dot" /> GESTÃO DE ACESSOS</span><h1>Licenças & usuários.</h1><p>Keys salvas na MockAPI: crie, revogue, bloqueie ou exclua permanentemente.</p></div><button className="primary-button" onClick={() => { setCreatedKey(""); setFormOpen(true); }}><PackagePlus size={17} /> Criar novo acesso</button></div>{createdKey && <div className="created-key-banner"><div className="notice-pulse"><KeyRound size={18} /></div><div><span>CHAVE GERADA · COPIE AGORA</span><b>{createdKey}</b></div><button onClick={async () => { await navigator.clipboard?.writeText(createdKey); toast.success("Chave copiada"); }}><Copy size={16} /> Copiar</button><button className="banner-close" onClick={() => setCreatedKey("")}><X size={16} /></button></div>}<div className="license-toolbar"><div className="search-shell"><Search size={16} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar por usuário ou chave..." /></div><div className="toolbar-count"><b>{filtered.length}</b> acessos encontrados</div></div><div className="licenses-table"><div className="table-head"><span>USUÁRIO</span><span>PLANO</span><span>DISPOSITIVO</span><span>VALIDADE</span><span>STATUS</span><span>AÇÕES</span></div>{licenses.isLoading ? <LoadingList /> : filtered.length === 0 ? <EmptyAdmin /> : filtered.map(item => <div className="table-row" key={item.id}><div className="user-cell"><div className="mini-avatar">{String(item.username ?? item.accessKey ?? "Usuário").slice(0, 1).toUpperCase()}</div><div><b>{item.username}</b><span className="key-text">{item.accessKey}</span></div></div><div><select className="plan-select" value={item.planId} onChange={event => update.mutate({ id: item.id, planId: event.target.value })}>{PLAN_CATALOG.map(plan => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select></div><div className="device-cell">{item.deviceId ? <><Smartphone size={15} /><span>Vinculado<br /><small>{String(item.deviceId).slice(0, 12)}...</small></span></> : <><Laptop size={15} /><span className="muted-text">Aguardando<br /><small>primeiro login</small></span></>}</div><div className="expiry-cell">{item.planId === "perm" ? <><b>Acesso permanente</b><span>sem expiração</span></> : !item.lastLoginAt ? <><b>Aguardando ativação</b><span>{item.planId === "hourly" ? "1 hora após o primeiro login" : "contagem a partir do primeiro login"}</span></> : <><b>{formatDate(item.expiresAt)}</b><span>{formatExpiry(item.expiresAt)}</span></>}</div><StatusPill status={item.status} /><div className="row-actions"><button title="Resetar dispositivo" onClick={() => resetDevice.mutate({ id: item.id })}><RotateCcw size={15} /></button><button title="Bloquear usuário" onClick={() => block.mutate({ id: item.id })}><Ban size={15} /></button><button title="Revogar chave" className="danger-action" onClick={() => revoke.mutate({ id: item.id })}><Trash2 size={15} /></button><button title="Excluir definitivamente da MockAPI" className="danger-action" onClick={() => { if (window.confirm("Excluir esta key da MockAPI definitivamente?")) remove.mutate({ id: item.id }); }}><X size={15} /></button></div></div>)}</div>{formOpen && <CreateLicenseModal username={username} setUsername={setUsername} planId={planId} setPlanId={handlePlanChange} durationValue={durationValue} setDurationValue={setDurationValue} durationUnit={durationUnit} setDurationUnit={setDurationUnit} onSubmit={submit} onClose={() => setFormOpen(false)} pending={create.isPending} />}</div>;
+  return <div className="admin-content"><div className="admin-heading"><div><span className="eyebrow"><span className="eyebrow-dot" /> GESTÃO DE ACESSOS</span><h1>Licenças & usuários.</h1><p>Keys salvas na MockAPI: crie, revogue, bloqueie ou exclua permanentemente.</p></div><button className="primary-button" onClick={() => { setCreatedKey(""); setFormOpen(true); }}><PackagePlus size={17} /> Criar novo acesso</button></div>{createdKey && <div className="created-key-banner"><div className="notice-pulse"><KeyRound size={18} /></div><div><span>CHAVE GERADA · COPIE AGORA</span><b>{createdKey}</b></div><button onClick={async () => { try { await copyToClipboard(createdKey); toast.success("Chave copiada"); } catch { toast.error("Não foi possível copiar a chave"); } }}><Copy size={16} /> Copiar</button><button className="banner-close" onClick={() => setCreatedKey("")}><X size={16} /></button></div>}<div className="license-toolbar"><div className="search-shell"><Search size={16} /><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Buscar por usuário ou chave..." /></div><div className="license-toolbar-actions"><div className="toolbar-count"><b>{allLicenses.length}</b> keys totais · {filtered.length} encontradas</div><button type="button" className="license-action" onClick={copyAllKeys} disabled={licenses.isLoading || !allLicenses.length}><Clipboard size={15} /> Copiar all</button><button type="button" className="license-action reset" onClick={confirmResetAll} disabled={licenses.isLoading || resetAll.isPending || !allLicenses.length}><Trash2 size={15} /> {resetAll.isPending ? "Excluindo..." : "Reset all"}</button></div></div><div className="licenses-table"><div className="table-head"><span>USUÁRIO</span><span>PLANO</span><span>DISPOSITIVO</span><span>VALIDADE</span><span>STATUS</span><span>AÇÕES</span></div>{licenses.isLoading ? <LoadingList /> : filtered.length === 0 ? <EmptyAdmin /> : filtered.map(item => <div className="table-row" key={item.id}><div className="user-cell"><div className="mini-avatar">{String(item.username ?? item.accessKey ?? "Usuário").slice(0, 1).toUpperCase()}</div><div><b>{item.username}</b><span className="key-text">{item.accessKey}</span></div></div><div><select className="plan-select" value={item.planId} onChange={event => update.mutate({ id: item.id, planId: event.target.value })}>{PLAN_CATALOG.map(plan => <option key={plan.id} value={plan.id}>{plan.name}</option>)}</select></div><div className="device-cell">{item.deviceId ? <><Smartphone size={15} /><span>Vinculado<br /><small>{String(item.deviceId).slice(0, 12)}...</small></span></> : <><Laptop size={15} /><span className="muted-text">Aguardando<br /><small>primeiro login</small></span></>}</div><div className="expiry-cell">{item.planId === "perm" ? <><b>Acesso permanente</b><span>sem expiração</span></> : !item.lastLoginAt ? <><b>Aguardando ativação</b><span>{item.planId === "hourly" ? "1 hora após o primeiro login" : "contagem a partir do primeiro login"}</span></> : <><b>{formatDate(item.expiresAt)}</b><span>{formatExpiry(item.expiresAt)}</span></>}</div><StatusPill status={item.status} /><div className="row-actions"><button title="Resetar dispositivo" onClick={() => resetDevice.mutate({ id: item.id })}><RotateCcw size={15} /></button><button title="Bloquear usuário" onClick={() => block.mutate({ id: item.id })}><Ban size={15} /></button><button title="Revogar chave" className="danger-action" onClick={() => revoke.mutate({ id: item.id })}><Trash2 size={15} /></button><button title="Excluir definitivamente da MockAPI" className="danger-action" onClick={() => { if (window.confirm("Excluir esta key da MockAPI definitivamente?")) remove.mutate({ id: item.id }); }}><X size={15} /></button></div></div>)}</div>{formOpen && <CreateLicenseModal username={username} setUsername={setUsername} planId={planId} setPlanId={handlePlanChange} durationValue={durationValue} setDurationValue={setDurationValue} durationUnit={durationUnit} setDurationUnit={setDurationUnit} onSubmit={submit} onClose={() => setFormOpen(false)} pending={create.isPending} />}</div>;
 }
 
 function CreateLicenseModal({ username, setUsername, planId, setPlanId, durationValue, setDurationValue, durationUnit, setDurationUnit, onSubmit, onClose, pending }: { username: string; setUsername: (value: string) => void; planId: string; setPlanId: (value: string) => void; durationValue: number; setDurationValue: (value: number) => void; durationUnit: (typeof DURATION_UNITS)[number]; setDurationUnit: (value: (typeof DURATION_UNITS)[number]) => void; onSubmit: (event: React.FormEvent) => void; onClose: () => void; pending: boolean }) {
@@ -322,18 +358,31 @@ function AdminApp({ onLogout }: { onLogout: () => void }) {
   return <AdminShell view={view} onChangeView={setView} onLogout={onLogout}>{view === "overview" ? <AdminOverview onGoLicenses={() => setView("licenses")} /> : <AdminLicenses />}</AdminShell>;
 }
 
+function ActivationNotice({ hwid, onClose }: { hwid: string; onClose: () => void }) {
+  return <div className="activation-notice-backdrop" role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose(); }}><section className="activation-notice-card" role="dialog" aria-modal="true" aria-labelledby="activation-notice-title"><h2 id="activation-notice-title">LOGIN</h2><span className="activation-hwid-label">HWID</span><code>{hwid}</code><button type="button" onClick={onClose}><Grid3X3 size={16} /> Fechar</button></section></div>;
+}
+
 export default function Home() {
+  const [activationHwid, setActivationHwid] = useState<string | null>(null);
   const me = trpc.auth.me.useQuery(undefined, { retry: false });
   const logout = trpc.auth.logout.useMutation({ onSuccess: () => { localStorage.removeItem("rbxis_session_token_v3"); localStorage.removeItem("rbxis_admin_mode_v3"); me.refetch(); window.location.reload(); } });
   const rawSession = me.data;
   const session = rawSession && rawSession.role && typeof rawSession.username === "string" && rawSession.username.trim() ? rawSession : null;
   useEffect(() => { if (!me.isLoading && !session) localStorage.removeItem("rbxis_session_token_v3"); }, [me.isLoading, session]);
+  useEffect(() => {
+    if (session?.role !== "user") return;
+    const pendingHwid = localStorage.getItem(ACTIVATION_NOTICE_STORAGE_KEY);
+    if (pendingHwid) {
+      localStorage.removeItem(ACTIVATION_NOTICE_STORAGE_KEY);
+      setActivationHwid(pendingHwid);
+    }
+  }, [session?.role]);
   const handleLogout = () => logout.mutate();
   const adminMode = localStorage.getItem("rbxis_admin_mode_v3") === "1" && Boolean(localStorage.getItem("rbxis_session_token_v3"));
   if (me.isLoading) return <LoadingScreen />;
   if (adminMode || session?.role === "admin") return <AdminApp onLogout={handleLogout} />;
   if (!session) return <LoginScreen />;
-  return <UserApp session={session} onLogout={handleLogout} />;
+  return <><UserApp session={session} onLogout={handleLogout} />{activationHwid && <ActivationNotice hwid={activationHwid} onClose={() => setActivationHwid(null)} />}</>;
 }
 
 declare global {

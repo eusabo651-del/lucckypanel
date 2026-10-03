@@ -37,6 +37,24 @@ describe("MockAPI key expiration", () => {
 });
 
 describe("MockAPI keys integration", () => {
+  it("reads every collection page so bulk copy/reset can include all keys", async () => {
+    const makeRow = (id: number) => ({ id: String(id), key: `LUCK-test-${id}`, used: false, device: "", expire: 1, type: "daily", createdAt: id, activatedAt: 0, expiresAt: 0 });
+    const firstPage = Array.from({ length: 100 }, (_, index) => makeRow(index + 1));
+    const secondPage = [makeRow(101)];
+    const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async input => {
+      const page = new URL(String(input)).searchParams.get("page");
+      const rows = page === "1" ? firstPage : page === "2" ? secondPage : [];
+      return new Response(JSON.stringify(rows), { status: 200, headers: { "content-type": "application/json" } });
+    });
+    try {
+      const keys = await listMockKeys();
+      expect(keys).toHaveLength(101);
+      expect(fetch).toHaveBeenCalledTimes(2);
+    } finally {
+      fetch.mockRestore();
+    }
+  });
+
   it("reads the configured keys collection", async () => {
     const keys = await listMockKeys();
     expect(Array.isArray(keys)).toBe(true);

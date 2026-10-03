@@ -65,6 +65,23 @@ async function mockRequest<T>(path = "", init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+async function listAllMockKeys() {
+  const rows: MockKey[] = [];
+  const seen = new Set<string>();
+  for (let page = 1; page <= 1000; page++) {
+    const current = await mockRequest<MockKey[]>(`?page=${page}&limit=100&sortBy=createdAt&order=desc`);
+    const fresh = current.filter((row) => {
+      const id = String(row.id ?? row.key ?? "");
+      if (!id || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+    rows.push(...fresh);
+    if (current.length < 100 || fresh.length === 0) break;
+  }
+  return rows;
+}
+
 function normalize(value: MockKey): MockKey {
   return { ...value, used: Boolean(value.used), device: value.device ?? "", expire: Number(value.expire ?? 0), createdAt: Number(value.createdAt ?? 0), activatedAt: Number(value.activatedAt ?? 0), expiresAt: Number(value.expiresAt ?? 0) };
 }
@@ -77,7 +94,7 @@ function asLicense(value: MockKey) {
   const key = normalize(value);
   const expires = key.expiresAt ? new Date(key.expiresAt * 1000) : null;
   const durationUnit = key.type === "hourly" ? "hours" : key.type === "weekly" ? "weeks" : key.type === "monthly" ? "months" : key.type === "yearly" ? "years" : "days";
-  return { id: numericId(key), userId: numericId({ ...key, key: `${key.key}:user` }), username: key.username ?? key.key, accessKey: key.key, planId: key.type ?? "custom", durationValue: key.expire ?? 0, durationUnit, expiresAt: expires, status: key.status ?? (key.expiresAt && key.expiresAt <= Math.floor(Date.now() / 1000) ? "revoked" : "active"), deviceId: key.device || null, lastLoginAt: key.activatedAt ? new Date(key.activatedAt * 1000) : null, createdAt: new Date((key.createdAt ?? 0) * 1000), updatedAt: new Date() };
+  return { id: numericId(key), userId: numericId({ ...key, key: `${key.key}:user` }), username: key.username ?? key.key, accessKey: key.key, planId: key.type ?? "custom", durationValue: key.expire ?? 0, durationUnit, expiresAt: expires, status: key.status ?? (key.expiresAt && key.expiresAt <= Math.floor(Date.now() / 1000) ? "revoked" : "active"), deviceId: key.device || null, used: Boolean(key.used || key.device || key.activatedAt), lastLoginAt: key.activatedAt ? new Date(key.activatedAt * 1000) : null, createdAt: new Date((key.createdAt ?? 0) * 1000), updatedAt: new Date() };
 }
 function bodyInput(input: any) {
   if (input && typeof input === "object" && input["0"] !== undefined) {
@@ -182,26 +199,27 @@ export default async function trpc(req: any, res: any) {
       const accessKey = String(data.accessKey ?? "").trim();
       const deviceId = String(data.deviceId ?? "").trim().slice(0, 160);
       if (!accessKey || deviceId.length < 8) return fail(res, 400, "Informe uma key válida e permita a identificação do dispositivo");
-      const keys = (await mockRequest<MockKey[]>()).map(normalize);
+      const keys = (await listAllMockKeys()).map(normalize);
       const key = keys.find((item) => item.key === accessKey);
       if (!key) return fail(res, 401, "Key inválida");
       if (key.status === "blocked") return fail(res, 403, "Esta key foi bloqueada pelo administrador");
       if (key.status === "revoked") return fail(res, 403, "Esta key foi revogada");
       if (key.expiresAt && key.expiresAt <= Math.floor(Date.now() / 1000)) return fail(res, 403, "Esta key expirou");
       if (key.device && key.device !== deviceId) return fail(res, 403, "Esta key já está vinculada a outro dispositivo");
+      const activatedNow = !key.activatedAt;
       const now = Math.floor(Date.now() / 1000);
       const activatedAt = key.activatedAt || now;
       const activationExpiresAt = key.expiresAt || activationExpirySeconds(key.type ?? "daily", Number(key.expire || 1), activatedAt);
       const updated = normalize(await mockRequest<MockKey>(`/${encodeURIComponent(key.id ?? key.key)}`, { method: "PUT", body: JSON.stringify({ device: deviceId, used: true, activatedAt, expiresAt: activationExpiresAt, onlineAt: now }) }));
       const sessionToken = tokenForUser(updated);
       res.setHeader("Set-Cookie", `rbxis_session_v3=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000`);
-      return ok(res, { success: true, username: updated.key, expiresAt: updated.expiresAt ? new Date(updated.expiresAt * 1000) : null, sessionToken });
+      return ok(res, { success: true, username: updated.key, expiresAt: updated.expiresAt ? new Date(updated.expiresAt * 1000) : null, sessionToken, activatedNow });
     }
     if (path === "auth.me") {
       const session = readSession(req);
       if (!session) return ok(res, null);
       if (session.role === "admin") return ok(res, { role: "admin", username: ADMIN_KEY, name: ADMIN_KEY, email: null });
-      const key = (await mockRequest<MockKey[]>()).map(normalize).find((item) => item.key === session.accessKey);
+      const key = (await listAllMockKeys()).map(normalize).find((item) => item.key === session.accessKey);
       if (!key || key.status === "revoked" || key.status === "blocked" || (key.expiresAt && key.expiresAt <= Math.floor(Date.now() / 1000))) return ok(res, null);
       return ok(res, { role: "user", username: key.key, name: key.key, email: null, planId: key.type ?? "daily", expiresAt: key.expiresAt ? new Date(key.expiresAt * 1000) : new Date("2099-12-31T23:59:59Z"), deviceId: key.device || null });
     }
@@ -209,7 +227,7 @@ export default async function trpc(req: any, res: any) {
     if (path === "generator.generate" || path === "generator.history" || path === "generator.favorites" || path === "generator.toggleFavorite") {
       const session = readSession(req);
       if (!session || session.role !== "user") return fail(res, 403, "O gerador é exclusivo para usuários");
-      const userKey = currentUserKey(session, (await mockRequest<MockKey[]>()).map(normalize));
+      const userKey = currentUserKey(session, (await listAllMockKeys()).map(normalize));
       if (!userKey) return fail(res, 403, "A licença não está ativa");
       const history = Array.isArray(userKey.history) ? userKey.history : [];
       if (path === "generator.history" || path === "generator.favorites") return ok(res, history.filter((item) => path === "generator.history" || item.favorite));
@@ -225,11 +243,16 @@ export default async function trpc(req: any, res: any) {
     }
     if (!readAdminSession(req)) return fail(res, 401, "Sessão administrativa inválida");
 
-    const raw = (await mockRequest<MockKey[]>()).map(normalize);
+    const raw = (await listAllMockKeys()).map(normalize);
     if (path === "admin.licenses") return ok(res, raw.map(asLicense));
     if (path === "admin.stats") {
       const licenses = raw.map(asLicense); const active = licenses.filter((x) => x.status === "active");
       return ok(res, { totalLicenses: licenses.length, activeLicenses: active.length, revokedLicenses: licenses.filter((x) => x.status === "revoked").length, blockedLicenses: licenses.filter((x) => x.status === "blocked").length, boundDevices: licenses.filter((x) => Boolean(x.deviceId)).length });
+    }
+    if (path === "admin.resetAll") {
+      if (data.confirm !== true) return fail(res, 400, "Confirme o reset total antes de excluir as keys");
+      for (const key of raw) await mockRequest<void>(`/${encodeURIComponent(key.id ?? key.key)}`, { method: "DELETE" });
+      return ok(res, { success: true, count: raw.length });
     }
     const match = (id: number) => raw.find((value) => numericId(value) === id);
     if (path === "admin.createLicense") {
@@ -251,7 +274,7 @@ export default async function trpc(req: any, res: any) {
     const patch: any = {};
     if (path === "admin.revokeLicense") patch.status = "revoked";
     else if (path === "admin.blockLicense") patch.status = "blocked";
-    else if (path === "admin.resetDevice") { patch.device = ""; patch.activatedAt = 0; }
+    else if (path === "admin.resetDevice") { patch.device = ""; patch.activatedAt = 0; patch.used = false; patch.expiresAt = 0; }
     else if (path === "admin.extendLicense") patch.expiresAt = addDuration(new Date((current.expiresAt ?? 0) * 1000), Number(data.durationValue), String(data.durationUnit));
     else if (path === "admin.updateLicense") { if (data.status) patch.status = data.status; if (data.planId) { patch.type = data.planId; if (data.planId === "hourly" && current.type !== "hourly") { patch.expire = 1; patch.expiresAt = current.activatedAt ? activationExpirySeconds("hourly", 1, current.activatedAt) : 0; } } if (data.durationValue && data.durationUnit) { patch.expire = (data.planId === "hourly" || (!data.planId && current.type === "hourly")) && data.durationUnit === "hours" ? Number(data.durationValue) : durationDays(Number(data.durationValue), String(data.durationUnit)); patch.expiresAt = addDuration(new Date(), Number(data.durationValue), String(data.durationUnit)); } }
     else return fail(res, 404, `Procedure not found: ${path}`);
