@@ -290,7 +290,7 @@ function AuxilioPage() {
         <div className="aux-window">
           <aside className="aux-rail">
             <div className="aux-brand"><Crosshair size={19} /></div>
-            {tabs.map(item => <button key={item.id} className={tab === item.id ? "active" : ""} onClick={() => setTab(item.id)} title={item.label} aria-label={item.label}><item.icon size={18} /></button>)}
+            {tabs.filter(item => item.id === "aimbot" || luckyTrickEnabled).map(item => <button key={item.id} className={tab === item.id ? "active" : ""} onClick={() => setTab(item.id)} title={item.label} aria-label={item.label}><item.icon size={18} /></button>)}
             <div className="aux-rail-line" /><span className="aux-status-dot" />
           </aside>
           <section className="aux-content">
@@ -299,14 +299,14 @@ function AuxilioPage() {
               <button className="aux-close" onClick={() => toast.info("Página Auxílio aberta no painel do usuário")} aria-label="Fechar aviso"><X size={17} /></button>
             </header>
             {tab === "aimbot" && <section className="aux-aimbot-panel" aria-label="Opções do Aimbot">
-              <AuxAimbotToggle label="luckyTRICK" description="Ative para exibir as funções do Aimbot." icon={Crosshair} checked={luckyTrickEnabled} onChange={() => setLuckyTrickEnabled(value => !value)} primary />
+              <AuxAimbotToggle label="luckyTRICK" description="Ative para exibir todas as funções do Auxílio." icon={<span className="aux-lucky-clover" aria-hidden="true">🍀</span>} checked={luckyTrickEnabled} onChange={() => setLuckyTrickEnabled(value => !value)} primary />
               {luckyTrickEnabled ? <div className="aux-aimbot-options">
-                <AuxAimbotToggle label="Legit" description="Mira suave e natural" icon={Crosshair} checked={toggles.legit} onChange={() => toggle("legit")} />
-                <AuxAimbotToggle label="Retirar Input Lag" description="Resposta mais rápida aos comandos" icon={Zap} checked={toggles.lag} onChange={() => toggle("lag")} />
-                <AuxAimbotToggle label="Diminuir Recuo" description="Controle aprimorado" icon={ShieldCheck} checked={toggles.recoil} onChange={() => toggle("recoil")} />
+                <AuxAimbotToggle label="Legit" description="Mira suave e natural" icon={<Crosshair size={22} />} checked={toggles.legit} onChange={() => toggle("legit")} />
+                <AuxAimbotToggle label="Retirar Input Lag" description="Resposta mais rápida aos comandos" icon={<Zap size={22} />} checked={toggles.lag} onChange={() => toggle("lag")} />
+                <AuxAimbotToggle label="Diminuir Recuo" description="Controle aprimorado" icon={<ShieldCheck size={22} />} checked={toggles.recoil} onChange={() => toggle("recoil")} />
               </div> : <div className="aux-aimbot-empty"><span className="aux-aimbot-empty-icon"><SlidersHorizontal size={25} /></span><b>Seu auxílio, do seu jeito</b><p>Ative <strong>luckyTRICK</strong> para mostrar as funções disponíveis.</p><span className="aux-aimbot-empty-status"><i /> Aguardando ativação</span></div>}
             </section>}
-            {tab === "sensi" && <div className="aux-center-panel">
+            {luckyTrickEnabled && tab === "sensi" && <div className="aux-center-panel">
               <Crosshair size={38} />
               <h2>Sistema do dispositivo</h2>
               <p>Escolha o sistema operacional e seu limite de FPS.</p>
@@ -318,14 +318,14 @@ function AuxilioPage() {
                 {[120, 240, 360].map(fps => <button key={fps} className={selectedFps === fps ? "selected" : ""} aria-pressed={selectedFps === fps} onClick={() => { setSelectedFps(fps); toast.info(`${fps} FPS selecionado`); }}>{fps} FPS</button>)}
               </div>
             </div>}
-            {tab === "modules" && <div className="aux-module-grid">
+            {luckyTrickEnabled && tab === "modules" && <div className="aux-module-grid">
               <AuxModule name="Precisão visual" icon={Crosshair} active={toggles.legit} onClick={() => toggle("legit")} />
               <AuxModule name="Resposta rápida" icon={Zap} active={toggles.lag} onClick={() => toggle("lag")} />
               <AuxModule name="Controle de mira" icon={Gauge} active={toggles.recoil} onClick={() => toggle("recoil")} />
               <AuxModule name="Boneco lento" description="Deixe seu inimigo com lentidez." icon={Clock3} active={toggles.slowTarget} onClick={() => toggle("slowTarget")} />
               <AuxModule name="Bypass" icon={LogOut} active={false} onClick={quickExitNow} />
             </div>}
-            {tab === "injection" && <div className="aux-injection">
+            {luckyTrickEnabled && tab === "injection" && <div className="aux-injection">
               <div className="aux-action-row">
                 <button onClick={() => { openGame("normal"); inject("FF NORMAL"); }} disabled={Boolean(injecting)}><Sparkles size={17} /> ABRIR FF NORMAL</button>
                 <button onClick={() => { openGame("max"); inject("FF MAX"); }} disabled={Boolean(injecting)}><Sparkles size={17} /> ABRIR FF MAX</button>
@@ -341,7 +341,7 @@ function AuxilioPage() {
   );
 }
 
-function AuxAimbotToggle({ label, description, icon: Icon, checked, onChange, primary = false }: { label: string; description: string; icon: React.ElementType; checked: boolean; onChange: () => void; primary?: boolean }) { return <button type="button" className={`aux-aimbot-row ${primary ? "primary" : ""} ${checked ? "active" : ""}`} onClick={onChange} role="switch" aria-checked={checked}><span className="aux-aimbot-icon"><Icon size={22} /></span><span className="aux-aimbot-copy"><b>{label}</b><small>{description}</small></span><span className={`aux-aimbot-switch ${checked ? "on" : ""}`} aria-hidden="true"><i /></span></button>; }
+function AuxAimbotToggle({ label, description, icon, checked, onChange, primary = false }: { label: string; description: string; icon: React.ReactNode; checked: boolean; onChange: () => void; primary?: boolean }) { return <button type="button" className={`aux-aimbot-row ${primary ? "primary" : ""} ${checked ? "active" : ""}`} onClick={onChange} role="switch" aria-checked={checked}><span className="aux-aimbot-icon">{icon}</span><span className="aux-aimbot-copy"><b>{label}</b><small>{description}</small></span><span className={`aux-aimbot-switch ${checked ? "on" : ""}`} aria-hidden="true"><i /></span></button>; }
 function AuxModule({ name, icon: Icon, active, onClick, description }: { name: string; icon: React.ElementType; active: boolean; onClick: () => void; description?: string }) { return <button className={`aux-module ${active ? "active" : ""}`} onClick={onClick} aria-pressed={active}><Icon size={24} /><span><b>{name}</b><small>{description ?? (active ? "Ativado" : "Toque para ativar")}</small></span><i>{active ? <Check size={14} /> : <ChevronRight size={15} />}</i></button>; }
 
 function HistoryPage({ favoritesOnly = false }: { favoritesOnly?: boolean }) {

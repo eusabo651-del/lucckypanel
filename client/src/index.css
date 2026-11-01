@@ -628,3 +628,102 @@ html, body { background: linear-gradient(135deg, #030303 0%, #1b1b1b 52%, #05050
   .aux-aimbot-switch i { width: 17px; height: 17px; }
   .aux-aimbot-switch.on i { transform: translateX(15px); }
 }
+
+
+/* Polimento do luckyTRICK: verde no estado ativo e movimento ambiente discreto. */
+.aux-page {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 72% 10%, #163323 0, transparent 36%), radial-gradient(ellipse at 9% 88%, #172a20 0, transparent 32%), linear-gradient(135deg, #050807, #111714 52%, #060807);
+}
+.aux-page::before,
+.aux-page::after {
+  position: absolute;
+  z-index: 0;
+  width: clamp(180px, 30vw, 430px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  content: "";
+  filter: blur(34px);
+  opacity: .23;
+  pointer-events: none;
+  animation: aux-ambient-drift 12s ease-in-out infinite alternate;
+}
+.aux-page::before {
+  top: -18%;
+  right: 8%;
+  background: radial-gradient(circle, #22c55e55, transparent 68%);
+}
+.aux-page::after {
+  bottom: -23%;
+  left: 5%;
+  background: radial-gradient(circle, #84cc1644, transparent 70%);
+  animation-delay: -6s;
+}
+.aux-window { position: relative; z-index: 1; animation: aux-window-enter .55s cubic-bezier(.2,.75,.25,1) both; }
+.aux-header { animation: aux-content-enter .45s .06s ease-out both; }
+.aux-aimbot-panel,
+.aux-center-panel,
+.aux-module-grid,
+.aux-injection { animation: aux-content-enter .42s ease-out both; }
+.aux-aimbot-row { animation: aux-row-enter .42s ease-out both; }
+.aux-aimbot-options .aux-aimbot-row:nth-child(1) { animation-delay: .04s; }
+.aux-aimbot-options .aux-aimbot-row:nth-child(2) { animation-delay: .12s; }
+.aux-aimbot-options .aux-aimbot-row:nth-child(3) { animation-delay: .2s; }
+.aux-aimbot-row.active {
+  border-color: #27934b;
+  box-shadow: inset 3px 0 #22c55e, 0 0 26px #22c55e17;
+}
+.aux-aimbot-row.primary.active {
+  border-color: #31a454;
+  background: linear-gradient(115deg, #17281d, #111713 72%);
+}
+.aux-aimbot-switch.on {
+  border-color: #4ade80;
+  background: #22c55e;
+  box-shadow: 0 0 17px #22c55e55;
+}
+.aux-lucky-clover {
+  display: inline-block;
+  font-size: 29px;
+  line-height: 1;
+  filter: drop-shadow(0 3px 7px #22c55e55);
+  animation: aux-clover-bob 2.7s ease-in-out infinite;
+}
+.aux-aimbot-empty-icon { animation: aux-clover-bob 3.2s ease-in-out infinite; }
+@keyframes aux-ambient-drift {
+  from { transform: translate3d(-10px, 8px, 0) scale(.94); }
+  to { transform: translate3d(20px, -14px, 0) scale(1.08); }
+}
+@keyframes aux-window-enter {
+  from { opacity: 0; transform: translateY(10px) scale(.99); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes aux-content-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes aux-row-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes aux-clover-bob {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-3px) rotate(2deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .aux-page::before,
+  .aux-page::after,
+  .aux-window,
+  .aux-header,
+  .aux-aimbot-panel,
+  .aux-center-panel,
+  .aux-module-grid,
+  .aux-injection,
+  .aux-aimbot-row,
+  .aux-lucky-clover,
+  .aux-aimbot-empty-icon {
+    animation: none !important;
+  }
+}
