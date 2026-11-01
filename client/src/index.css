@@ -792,3 +792,19 @@ html, body { background: linear-gradient(135deg, #030303 0%, #1b1b1b 52%, #05050
   .clover-aura::before { animation: none !important; }
   .clover-aura span { opacity: .08; }
 }
+
+
+/* Navegação de categorias de keys no menu do administrador. */
+.admin-menu-popover button.active {
+  color: #fff;
+  background: linear-gradient(100deg, #203126, #1a211d);
+  box-shadow: inset 2px 0 #55c878;
+}
+.admin-menu-separator {
+  height: 1px;
+  margin: 3px 7px 5px;
+  background: #2b2e35;
+}
+.admin-menu-popover button svg { flex: 0 0 auto; color: #83d596; }
+
+.status-pill.expired { color: #ee8585; }
