@@ -8,7 +8,7 @@ type MockKey = {
   history?: Array<Record<string, any>>; onlineAt?: number;
 };
 
-const MOCKAPI_KEYS_URL = "https://69b9908ce69653ffe6a81689.mockapi.io/api/v1/keys";
+const MOCKAPI_KEYS_URL = "https://6ac92b96fd7c536b1bda8e99.mockapi.io/androidkeys";
 const ADMIN_KEY = process.env.RBXIS_ADMIN_KEY?.trim() || "LUCKADMIN00";
 const SESSION_COOKIE = "rbxis_session_v3";
 const secret = () => process.env.RBXIS_SESSION_SECRET || "rbxis-session-secret-change-this-in-vercel";
