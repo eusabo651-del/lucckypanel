@@ -727,3 +727,68 @@ html, body { background: linear-gradient(135deg, #030303 0%, #1b1b1b 52%, #05050
     animation: none !important;
   }
 }
+
+
+/* Revelação da chave e aura discreta de trevos no gerador de sensibilidade. */
+.input-action {
+  display: inline-grid;
+  flex: 0 0 34px;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  color: #888d97;
+  transition: color .16s ease, background .16s ease, transform .16s ease;
+}
+.input-action:hover { color: #a8e7b5; background: #79d98c18; }
+.input-action:active { transform: scale(.92); }
+.input-action:focus-visible { outline: 2px solid #60c878; outline-offset: 2px; }
+.generator-page-view { position: relative; isolation: isolate; }
+.generator-page-view > :not(.clover-aura) { position: relative; z-index: 1; }
+.clover-aura {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  user-select: none;
+}
+.clover-aura::before {
+  position: absolute;
+  right: -16vw;
+  bottom: -45vh;
+  width: min(76vw, 920px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, #22c55e17 0, #22c55e09 38%, transparent 70%);
+  content: "";
+  filter: blur(16px);
+  animation: clover-aura-pulse 9s ease-in-out infinite alternate;
+}
+.clover-aura span {
+  position: absolute;
+  bottom: -36px;
+  display: block;
+  opacity: 0;
+  filter: drop-shadow(0 0 8px #4ade8050);
+  animation-name: clover-particle-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+@keyframes clover-particle-rise {
+  0% { transform: translate3d(0, 0, 0) rotate(-12deg) scale(.72); opacity: 0; }
+  12% { opacity: .34; }
+  50% { transform: translate3d(22px, -48vh, 0) rotate(145deg) scale(1); opacity: .27; }
+  88% { opacity: .3; }
+  100% { transform: translate3d(-16px, -108vh, 0) rotate(320deg) scale(1.15); opacity: 0; }
+}
+@keyframes clover-aura-pulse {
+  from { transform: translate3d(-12px, 8px, 0) scale(.92); opacity: .65; }
+  to { transform: translate3d(8px, -12px, 0) scale(1.08); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .clover-aura span,
+  .clover-aura::before { animation: none !important; }
+  .clover-aura span { opacity: .08; }
+}
