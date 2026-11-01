@@ -234,6 +234,7 @@ function AuxilioPage() {
   const [tab, setTab] = useState<"aimbot" | "sensi" | "modules" | "injection">("aimbot");
   const [quickExit, setQuickExit] = useState(false);
   const [toggles, setToggles] = useState({ legit: false, lag: false, recoil: false, slowTarget: false });
+  const [luckyTrickEnabled, setLuckyTrickEnabled] = useState(false);
   const [selectedPlatform, setSelectedPlatform] = useState<"iOS" | "Android">("Android");
   const [selectedFps, setSelectedFps] = useState<number | null>(null);
   const [injecting, setInjecting] = useState<string | null>(null);
@@ -297,11 +298,14 @@ function AuxilioPage() {
               <div><span className="aux-kicker">LUCKY REI / AUXÍLIO</span><h1>{title}</h1><p>{description}</p></div>
               <button className="aux-close" onClick={() => toast.info("Página Auxílio aberta no painel do usuário")} aria-label="Fechar aviso"><X size={17} /></button>
             </header>
-            {tab === "aimbot" && <div className="aux-panel-list">
-              <AuxToggle label="Legit" description="Mira suave e natural" value={toggles.legit} onClick={() => toggle("legit")} />
-              <AuxToggle label="Retirar Input Lag" description="Resposta mais rápida aos comandos" value={toggles.lag} onClick={() => toggle("lag")} />
-              <AuxToggle label="Diminuir Recuo" description="Controle aprimorado" value={toggles.recoil} onClick={() => toggle("recoil")} />
-            </div>}
+            {tab === "aimbot" && <section className="aux-aimbot-panel" aria-label="Opções do Aimbot">
+              <AuxAimbotToggle label="luckyTRICK" description="Ative para exibir as funções do Aimbot." icon={Crosshair} checked={luckyTrickEnabled} onChange={() => setLuckyTrickEnabled(value => !value)} primary />
+              {luckyTrickEnabled ? <div className="aux-aimbot-options">
+                <AuxAimbotToggle label="Legit" description="Mira suave e natural" icon={Crosshair} checked={toggles.legit} onChange={() => toggle("legit")} />
+                <AuxAimbotToggle label="Retirar Input Lag" description="Resposta mais rápida aos comandos" icon={Zap} checked={toggles.lag} onChange={() => toggle("lag")} />
+                <AuxAimbotToggle label="Diminuir Recuo" description="Controle aprimorado" icon={ShieldCheck} checked={toggles.recoil} onChange={() => toggle("recoil")} />
+              </div> : <div className="aux-aimbot-empty"><span className="aux-aimbot-empty-icon"><SlidersHorizontal size={25} /></span><b>Seu auxílio, do seu jeito</b><p>Ative <strong>luckyTRICK</strong> para mostrar as funções disponíveis.</p><span className="aux-aimbot-empty-status"><i /> Aguardando ativação</span></div>}
+            </section>}
             {tab === "sensi" && <div className="aux-center-panel">
               <Crosshair size={38} />
               <h2>Sistema do dispositivo</h2>
@@ -337,7 +341,7 @@ function AuxilioPage() {
   );
 }
 
-function AuxToggle({ label, description, value, onClick }: { label: string; description: string; value: boolean; onClick: () => void }) { return <button className="aux-toggle-row" onClick={onClick}><span><b>{label}</b><small>{description}</small></span><i className={value ? "on" : ""}><em /></i></button>; }
+function AuxAimbotToggle({ label, description, icon: Icon, checked, onChange, primary = false }: { label: string; description: string; icon: React.ElementType; checked: boolean; onChange: () => void; primary?: boolean }) { return <button type="button" className={`aux-aimbot-row ${primary ? "primary" : ""} ${checked ? "active" : ""}`} onClick={onChange} role="switch" aria-checked={checked}><span className="aux-aimbot-icon"><Icon size={22} /></span><span className="aux-aimbot-copy"><b>{label}</b><small>{description}</small></span><span className={`aux-aimbot-switch ${checked ? "on" : ""}`} aria-hidden="true"><i /></span></button>; }
 function AuxModule({ name, icon: Icon, active, onClick, description }: { name: string; icon: React.ElementType; active: boolean; onClick: () => void; description?: string }) { return <button className={`aux-module ${active ? "active" : ""}`} onClick={onClick} aria-pressed={active}><Icon size={24} /><span><b>{name}</b><small>{description ?? (active ? "Ativado" : "Toque para ativar")}</small></span><i>{active ? <Check size={14} /> : <ChevronRight size={15} />}</i></button>; }
 
 function HistoryPage({ favoritesOnly = false }: { favoritesOnly?: boolean }) {

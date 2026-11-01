@@ -455,3 +455,176 @@ html, body { background: linear-gradient(135deg, #030303 0%, #1b1b1b 52%, #05050
   outline: 2px solid #69aaf0;
   outline-offset: 3px;
 }
+
+
+/* Aimbot luckyTRICK: painel em tela cheia com cartões de alternância. */
+.aux-page {
+  width: 100%;
+  height: 100svh;
+  min-height: 0;
+  box-sizing: border-box;
+  place-items: stretch;
+  padding: 18px;
+  filter: none;
+}
+.aux-window {
+  width: min(1320px, 100%);
+  height: 100%;
+  min-height: 0;
+  margin: 0 auto;
+}
+.aux-content {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  padding: clamp(24px, 3vw, 44px);
+}
+.aux-aimbot-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  gap: 14px;
+  margin-top: 22px;
+}
+.aux-aimbot-row {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 60px;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  min-height: 88px;
+  padding: 14px 20px;
+  border: 1px solid #30313a;
+  border-radius: 14px;
+  color: #f4f4f5;
+  background: linear-gradient(115deg, #1c1d23, #111216 72%);
+  text-align: left;
+  transition: border-color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.aux-aimbot-row:hover {
+  border-color: #87502d;
+  background: linear-gradient(115deg, #25201d, #141316 72%);
+}
+.aux-aimbot-row:active { transform: scale(.995); }
+.aux-aimbot-row.primary {
+  min-height: 102px;
+  border-color: #633c25;
+  background: linear-gradient(115deg, #291d17, #151316 72%);
+}
+.aux-aimbot-row.active {
+  border-color: #b5531c;
+  box-shadow: inset 3px 0 #f2731b, 0 0 24px #f2731b12;
+}
+.aux-aimbot-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border: 1px solid #503522;
+  border-radius: 12px;
+  color: #f38a3c;
+  background: linear-gradient(145deg, #322218, #1b1717);
+}
+.aux-aimbot-copy { display: block; min-width: 0; }
+.aux-aimbot-copy b,
+.aux-aimbot-copy small { display: block; }
+.aux-aimbot-copy b { color: #f5f5f6; font-size: 15px; font-weight: 750; letter-spacing: -.015em; }
+.aux-aimbot-copy small { margin-top: 6px; color: #92939c; font-size: 11px; line-height: 1.45; }
+.aux-aimbot-switch {
+  position: relative;
+  display: block;
+  justify-self: end;
+  width: 58px;
+  height: 34px;
+  border: 1px solid #41434c;
+  border-radius: 999px;
+  background: #292b32;
+  transition: border-color .18s ease, background .18s ease;
+}
+.aux-aimbot-switch i {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #d7d8dc;
+  transition: transform .18s ease, background .18s ease;
+}
+.aux-aimbot-switch.on {
+  border-color: #ff7a1a;
+  background: #f36b12;
+}
+.aux-aimbot-switch.on i {
+  transform: translateX(24px);
+  background: #fff;
+}
+.aux-aimbot-options {
+  display: grid;
+  flex: 1;
+  grid-template-rows: repeat(3, minmax(82px, 1fr));
+  gap: 12px;
+  min-height: 0;
+}
+.aux-aimbot-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 160px;
+  padding: 22px;
+  border: 1px dashed #373039;
+  border-radius: 15px;
+  background: radial-gradient(circle at 50% 45%, #35211644, transparent 58%), #101115;
+  text-align: center;
+}
+.aux-aimbot-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  margin-bottom: 15px;
+  border: 1px solid #51351f;
+  border-radius: 15px;
+  color: #ee873b;
+  background: #231a16;
+}
+.aux-aimbot-empty > b { color: #ececef; font-size: 14px; }
+.aux-aimbot-empty p { margin: 7px 0 15px; color: #8a8c95; font-size: 11px; line-height: 1.5; }
+.aux-aimbot-empty p strong { color: #f2a266; }
+.aux-aimbot-empty-status { display: inline-flex; align-items: center; gap: 7px; color: #83858d; font-size: 9px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+.aux-aimbot-empty-status i { width: 6px; height: 6px; border-radius: 50%; background: #ee873b; box-shadow: 0 0 0 4px #ee873b1a; }
+@media (max-width: 760px) {
+  .aux-page {
+    height: calc(100svh - 145px);
+    min-height: max(420px, calc(100svh - 145px));
+    padding: 10px 12px;
+  }
+  .aux-window { width: 100%; height: 100%; min-height: 0; align-self: stretch; }
+  .aux-content { height: 100%; padding: 20px 16px 12px; }
+  .aux-aimbot-panel { gap: 9px; margin-top: 14px; }
+  .aux-aimbot-row,
+  .aux-aimbot-row.primary { grid-template-columns: 42px minmax(0, 1fr) 48px; gap: 10px; min-height: 70px; padding: 10px 11px; border-radius: 11px; }
+  .aux-aimbot-icon { width: 42px; height: 42px; border-radius: 10px; }
+  .aux-aimbot-icon svg { width: 19px; height: 19px; }
+  .aux-aimbot-copy b { font-size: 12px; }
+  .aux-aimbot-copy small { margin-top: 4px; font-size: 9px; }
+  .aux-aimbot-switch { width: 46px; height: 28px; }
+  .aux-aimbot-switch i { top: 3px; left: 3px; width: 20px; height: 20px; }
+  .aux-aimbot-switch.on i { transform: translateX(18px); }
+  .aux-aimbot-options { grid-template-rows: repeat(3, minmax(64px, 1fr)); gap: 8px; }
+  .aux-aimbot-empty { padding: 16px; }
+}
+@media (max-width: 390px) {
+  .aux-page { padding-right: 8px; padding-left: 8px; }
+  .aux-content { padding-right: 11px; padding-left: 11px; }
+  .aux-aimbot-row,
+  .aux-aimbot-row.primary { grid-template-columns: 36px minmax(0, 1fr) 42px; gap: 8px; padding-right: 8px; padding-left: 8px; }
+  .aux-aimbot-icon { width: 36px; height: 36px; }
+  .aux-aimbot-icon svg { width: 17px; height: 17px; }
+  .aux-aimbot-switch { width: 40px; height: 25px; }
+  .aux-aimbot-switch i { width: 17px; height: 17px; }
+  .aux-aimbot-switch.on i { transform: translateX(15px); }
+}
