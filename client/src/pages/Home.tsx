@@ -233,11 +233,13 @@ function ResultCard({ values, historyId, isFavorited, onFavorite }: { values: Se
 function AuxilioPage() {
   const [tab, setTab] = useState<"aimbot" | "sensi" | "modules" | "injection">("aimbot");
   const [quickExit, setQuickExit] = useState(false);
-  const [toggles, setToggles] = useState({ legit: false, lag: false, recoil: false });
+  const [toggles, setToggles] = useState({ legit: false, lag: false, recoil: false, slowTarget: false });
+  const [selectedPlatform, setSelectedPlatform] = useState<"iOS" | "Android">("Android");
+  const [selectedFps, setSelectedFps] = useState<number | null>(null);
   const [injecting, setInjecting] = useState<string | null>(null);
   const [active, setActive] = useState<string | null>(null);
   const [logs, setLogs] = useState<string[]>(["[SISTEMA] Auxílio carregado com segurança."]);
-  const toggle = (key: "legit" | "lag" | "recoil") => setToggles(value => ({ ...value, [key]: !value[key] }));
+  const toggle = (key: keyof typeof toggles) => setToggles(value => ({ ...value, [key]: !value[key] }));
   const inject = (mode: string) => {
     setInjecting(mode); setActive(null); setLogs(value => [...value, `[INFO] Preparando ${mode}...`]);
     window.setTimeout(() => { setInjecting(null); setActive(mode); setLogs(value => [...value, `[SUCESSO] ${mode} ativo e funcionando!`]); toast.success("Módulo ativado"); }, 1500);
@@ -264,11 +266,79 @@ function AuxilioPage() {
       window.setTimeout(() => { if (document.visibilityState === "visible") window.location.replace("about:blank"); }, 120);
     }, 180);
   };
-  const tabs = [{ id: "aimbot" as const, label: "AIMBOT", icon: Settings2 }, { id: "sensi" as const, label: "SENSI", icon: ShieldCheck }, { id: "modules" as const, label: "MÓDULOS", icon: Grid3X3 }, { id: "injection" as const, label: "INJEÇÃO", icon: Sparkles }];
-  return <div className={`aux-page ${quickExit ? "quick-exit-active" : ""}`}>{quickExit ? <div className="quick-exit-screen"><div className="quick-exit-mark"><X size={25} /></div><b>Saída rápida</b><span>Sessão encerrada neste site.</span></div> : <div className="aux-window"><aside className="aux-rail"><div className="aux-brand"><Crosshair size={19} /></div>{tabs.map(item => <button key={item.id} className={tab === item.id ? "active" : ""} onClick={() => setTab(item.id)} title={item.label}><item.icon size={18} /></button>)}<div className="aux-rail-line" /><span className="aux-status-dot" /></aside><section className="aux-content"><header className="aux-header"><div><span className="aux-kicker">LUCKY REI / AUXÍLIO</span><h1>{tab === "aimbot" ? "AIMBOT" : tab === "sensi" ? "GERADOR DE SENSI" : tab === "modules" ? "MÓDULOS" : "INJEÇÃO"}</h1><p>{tab === "aimbot" ? "Configurações de mira e precisão" : tab === "sensi" ? "Gere a melhor sensibilidade para seu aparelho" : tab === "modules" ? "Ative recursos  do seu auxílio" : "Injeção de módulos no jogo"}</p></div><button className="aux-close" onClick={() => toast.info("Página Auxílio aberta no painel do usuário")}><X size={17} /></button></header>{tab === "aimbot" && <div className="aux-panel-list"><AuxToggle label="Legit" description="Mira suave e natural" value={toggles.legit} onClick={() => toggle("legit")} /><AuxToggle label="Retirar Input Lag" description="Resposta mais rápida aos comandos" value={toggles.lag} onClick={() => toggle("lag")} /><AuxToggle label="Diminuir Recuo" description="Controle aprimorado" value={toggles.recoil} onClick={() => toggle("recoil")} /></div>}{tab === "sensi" && <div className="aux-center-panel"><Crosshair size={38} /><h2>Selecione seu celular:</h2><p>Escolha o sistema para abrir o gerador principal.</p><div className="aux-choice-row"><button onClick={() => toast.info("Use o Gerador para configurar seu iOS")}>iOS</button><button className="selected" onClick={() => toast.info("Use o Gerador para configurar seu Android")}>Android</button></div></div>}{tab === "modules" && <div className="aux-module-grid"><AuxModule name="Precisão visual" icon={Crosshair} active={toggles.legit} onClick={() => toggle("legit")} /><AuxModule name="Resposta rápida" icon={Zap} active={toggles.lag} onClick={() => toggle("lag")} /><AuxModule name="Controle de mira" icon={Gauge} active={toggles.recoil} onClick={() => toggle("recoil")} /><AuxModule name="Bypass" icon={LogOut} active={false} onClick={quickExitNow} /></div>}{tab === "injection" && <div className="aux-injection"><div className="aux-action-row"><button onClick={() => { openGame("normal"); inject("FF NORMAL"); }} disabled={Boolean(injecting)}><Sparkles size={17} /> ABRIR FF NORMAL</button><button onClick={() => { openGame("max"); inject("FF MAX"); }} disabled={Boolean(injecting)}><Sparkles size={17} /> ABRIR FF MAX</button></div><div className={`aux-injection-state ${active ? "active" : ""}`}>{injecting ? <><RefreshCw className="spin" size={18} /> Injeção em andamento...</> : active ? <><span className="aux-green-dot" /> Injeção ativa e funcionando!</> : "Aguardando módulo"}</div><div className="aux-console">{logs.map((log, index) => <div key={`${log}-${index}`} className={log.includes("SUCESSO") ? "success" : ""}><span>[{new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}]</span> {log}</div>)}</div></div>}<footer className="aux-footer">Todos os direitos reservados <b>luckyrei / 2026</b></footer></section></div>}</div>;
+  const tabs = [
+    { id: "aimbot" as const, label: "AIMBOT", icon: Settings2 },
+    { id: "sensi" as const, label: "SENSI", icon: ShieldCheck },
+    { id: "modules" as const, label: "MÓDULOS", icon: Grid3X3 },
+    { id: "injection" as const, label: "INJEÇÃO", icon: Sparkles },
+  ];
+  const title = tab === "aimbot" ? "AIMBOT" : tab === "sensi" ? "Escolher dispositivo" : tab === "modules" ? "MÓDULOS" : "INJEÇÃO";
+  const description = tab === "aimbot"
+    ? "Configurações de mira e precisão"
+    : tab === "sensi"
+      ? "Selecione seu dispositivo e o limite de FPS"
+      : tab === "modules"
+        ? "Ative recursos do seu auxílio"
+        : "Injeção de módulos no jogo";
+
+  return (
+    <div className={`aux-page ${quickExit ? "quick-exit-active" : ""}`}>
+      {quickExit ? (
+        <div className="quick-exit-screen"><div className="quick-exit-mark"><X size={25} /></div><b>Saída rápida</b><span>Sessão encerrada neste site.</span></div>
+      ) : (
+        <div className="aux-window">
+          <aside className="aux-rail">
+            <div className="aux-brand"><Crosshair size={19} /></div>
+            {tabs.map(item => <button key={item.id} className={tab === item.id ? "active" : ""} onClick={() => setTab(item.id)} title={item.label} aria-label={item.label}><item.icon size={18} /></button>)}
+            <div className="aux-rail-line" /><span className="aux-status-dot" />
+          </aside>
+          <section className="aux-content">
+            <header className="aux-header">
+              <div><span className="aux-kicker">LUCKY REI / AUXÍLIO</span><h1>{title}</h1><p>{description}</p></div>
+              <button className="aux-close" onClick={() => toast.info("Página Auxílio aberta no painel do usuário")} aria-label="Fechar aviso"><X size={17} /></button>
+            </header>
+            {tab === "aimbot" && <div className="aux-panel-list">
+              <AuxToggle label="Legit" description="Mira suave e natural" value={toggles.legit} onClick={() => toggle("legit")} />
+              <AuxToggle label="Retirar Input Lag" description="Resposta mais rápida aos comandos" value={toggles.lag} onClick={() => toggle("lag")} />
+              <AuxToggle label="Diminuir Recuo" description="Controle aprimorado" value={toggles.recoil} onClick={() => toggle("recoil")} />
+            </div>}
+            {tab === "sensi" && <div className="aux-center-panel">
+              <Crosshair size={38} />
+              <h2>Sistema do dispositivo</h2>
+              <p>Escolha o sistema operacional e seu limite de FPS.</p>
+              <div className="aux-choice-row">
+                <button className={selectedPlatform === "iOS" ? "selected" : ""} aria-pressed={selectedPlatform === "iOS"} onClick={() => setSelectedPlatform("iOS")}>iOS</button>
+                <button className={selectedPlatform === "Android" ? "selected" : ""} aria-pressed={selectedPlatform === "Android"} onClick={() => setSelectedPlatform("Android")}>Android</button>
+              </div>
+              <div className="aux-fps-options" role="group" aria-label="Selecionar limite de FPS">
+                {[120, 240, 360].map(fps => <button key={fps} className={selectedFps === fps ? "selected" : ""} aria-pressed={selectedFps === fps} onClick={() => { setSelectedFps(fps); toast.info(`${fps} FPS selecionado`); }}>{fps} FPS</button>)}
+              </div>
+            </div>}
+            {tab === "modules" && <div className="aux-module-grid">
+              <AuxModule name="Precisão visual" icon={Crosshair} active={toggles.legit} onClick={() => toggle("legit")} />
+              <AuxModule name="Resposta rápida" icon={Zap} active={toggles.lag} onClick={() => toggle("lag")} />
+              <AuxModule name="Controle de mira" icon={Gauge} active={toggles.recoil} onClick={() => toggle("recoil")} />
+              <AuxModule name="Boneco lento" description="Deixe seu inimigo com lentidez." icon={Clock3} active={toggles.slowTarget} onClick={() => toggle("slowTarget")} />
+              <AuxModule name="Bypass" icon={LogOut} active={false} onClick={quickExitNow} />
+            </div>}
+            {tab === "injection" && <div className="aux-injection">
+              <div className="aux-action-row">
+                <button onClick={() => { openGame("normal"); inject("FF NORMAL"); }} disabled={Boolean(injecting)}><Sparkles size={17} /> ABRIR FF NORMAL</button>
+                <button onClick={() => { openGame("max"); inject("FF MAX"); }} disabled={Boolean(injecting)}><Sparkles size={17} /> ABRIR FF MAX</button>
+              </div>
+              <div className={`aux-injection-state ${active ? "active" : ""}`}>{injecting ? <><RefreshCw className="spin" size={18} /> Injeção em andamento...</> : active ? <><span className="aux-green-dot" /> Injeção ativa e funcionando!</> : "Aguardando módulo"}</div>
+              <div className="aux-console">{logs.map((log, index) => <div key={`${log}-${index}`} className={log.includes("SUCESSO") ? "success" : ""}><span>[{new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}]</span> {log}</div>)}</div>
+            </div>}
+            <footer className="aux-footer">Todos os direitos reservados <b>luckyrei / 2026</b></footer>
+          </section>
+        </div>
+      )}
+    </div>
+  );
 }
+
 function AuxToggle({ label, description, value, onClick }: { label: string; description: string; value: boolean; onClick: () => void }) { return <button className="aux-toggle-row" onClick={onClick}><span><b>{label}</b><small>{description}</small></span><i className={value ? "on" : ""}><em /></i></button>; }
-function AuxModule({ name, icon: Icon, active, onClick }: { name: string; icon: React.ElementType; active: boolean; onClick: () => void }) { return <button className={`aux-module ${active ? "active" : ""}`} onClick={onClick}><Icon size={24} /><span><b>{name}</b><small>{active ? "Ativado" : "Toque para ativar"}</small></span><i>{active ? <Check size={14} /> : <ChevronRight size={15} />}</i></button>; }
+function AuxModule({ name, icon: Icon, active, onClick, description }: { name: string; icon: React.ElementType; active: boolean; onClick: () => void; description?: string }) { return <button className={`aux-module ${active ? "active" : ""}`} onClick={onClick} aria-pressed={active}><Icon size={24} /><span><b>{name}</b><small>{description ?? (active ? "Ativado" : "Toque para ativar")}</small></span><i>{active ? <Check size={14} /> : <ChevronRight size={15} />}</i></button>; }
 
 function HistoryPage({ favoritesOnly = false }: { favoritesOnly?: boolean }) {
   const query = favoritesOnly ? trpc.generator.favorites.useQuery() : trpc.generator.history.useQuery();

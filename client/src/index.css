@@ -422,3 +422,36 @@ html, body { background: linear-gradient(135deg, #030303 0%, #1b1b1b 52%, #05050
   .license-toolbar-actions .toolbar-count { flex: 1 0 100%; }
   .license-action { flex: 1; }
 }
+
+
+/* Opções de plataforma e limite de FPS na aba Escolher dispositivo. */
+.aux-fps-options {
+  display: grid;
+  width: min(100%, 390px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 17px;
+}
+.aux-fps-options button {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid #34343b;
+  border-radius: 8px;
+  color: #a8acb5;
+  background: #15171d;
+  font-size: 11px;
+  font-weight: 800;
+  transition: border-color .16s ease, color .16s ease, background .16s ease;
+}
+.aux-fps-options button:hover,
+.aux-fps-options button.selected {
+  border-color: #3b88d8;
+  color: #fff;
+  background: #182532;
+}
+.aux-choice-row button:focus-visible,
+.aux-fps-options button:focus-visible,
+.aux-module:focus-visible {
+  outline: 2px solid #69aaf0;
+  outline-offset: 3px;
+}
