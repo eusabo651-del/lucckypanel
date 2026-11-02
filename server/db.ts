@@ -78,6 +78,10 @@ export async function updateProductLicense(id: number, values: Partial<Pick<Prod
       patch.expire = 1;
       patch.expiresAt = key.activatedAt ? activationExpirySeconds("hourly", 1, key.activatedAt) : 0;
     }
+    if (nextType === "monthly") {
+      patch.expire = 30;
+      patch.expiresAt = key.activatedAt ? activationExpirySeconds("monthly", 30, key.activatedAt) : 0;
+    }
   }
   if (values.durationValue) patch.expire = values.durationValue;
   return mockKeyToLicense(await updateMockKey(key.id, patch));

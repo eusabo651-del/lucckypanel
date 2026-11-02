@@ -63,6 +63,33 @@ describe("Vercel admin login", () => {
     expect(vi.mocked(globalThis.fetch)).not.toHaveBeenCalled();
   });
 
+  it("creates the requested number of 30-day keys in one admin operation", async () => {
+    let nextId = 0;
+    const fetchMock = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (!init?.method || init.method === "GET") return new Response(JSON.stringify([]), { status: 200, headers: { "content-type": "application/json" } });
+      if (init?.method !== "POST") throw new Error(`Unexpected MockAPI request: ${String(_input)} (${init?.method})`);
+      const posted = JSON.parse(String(init.body)) as Record<string, unknown>;
+      const row = { id: String(++nextId), ...posted };
+      return new Response(JSON.stringify(row), { status: 201, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const login = await invoke("auth.adminLogin", { adminKey: "correct-admin-key" });
+    const created = await invoke("admin.createLicense", { username: "batch_test", planId: "monthly", durationValue: 30, durationUnit: "days", quantity: 10 }, login.headers["Set-Cookie"]);
+    expect(created.statusCode, created.body).toBe(200);
+    const result = responseData(created);
+
+    expect(login.statusCode).toBe(200);
+    expect(created.statusCode).toBe(200);
+    expect(result.count).toBe(10);
+    expect(result.failed).toBe(0);
+    expect(result.keys).toHaveLength(10);
+    expect(new Set(result.keys.map((key: { accessKey: string }) => key.accessKey)).size).toBe(10);
+    const postedRows = fetchMock.mock.calls.filter(([, init]) => init?.method === "POST").map(([, init]) => JSON.parse(String(init?.body)));
+    expect(postedRows).toHaveLength(10);
+    expect(postedRows.every((row) => row.type === "monthly" && row.expire === 30 && row.username === "batch_test")).toBe(true);
+  });
+
   it("keeps login handling functional when the webhook environment variable is absent", async () => {
     vi.stubEnv("DISCORD_ADMIN_LOGIN_WEBHOOK", "");
     const res = await invoke("auth.adminLogin", { adminKey: "wrong-admin-key" });

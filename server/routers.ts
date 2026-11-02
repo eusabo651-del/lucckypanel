@@ -22,9 +22,12 @@ import { publicProcedure, rbxisAdminProcedure, rbxisProcedure, router } from "./
 
 const durationUnitSchema = z.enum(DURATION_UNITS);
 const statusSchema = z.enum(["active", "revoked", "blocked"]);
-const createLicenseSchema = z.object({ username: z.string().trim().min(2).max(60), planId: z.string().min(1).max(40), durationValue: z.number().int().min(1).max(3650), durationUnit: durationUnitSchema }).superRefine((input, context) => {
+const createLicenseSchema = z.object({ username: z.string().trim().min(2).max(60), planId: z.string().min(1).max(40), durationValue: z.number().int().min(1).max(3650), durationUnit: durationUnitSchema, quantity: z.number().int().min(1).max(20).default(1) }).superRefine((input, context) => {
   if (input.planId === "hourly" && (input.durationValue !== 1 || input.durationUnit !== "hours")) {
     context.addIssue({ code: "custom", path: ["durationUnit"], message: "O plano de 1 hora precisa ter duração fixa de 1 hora" });
+  }
+  if (input.planId === "monthly" && (input.durationValue !== 30 || input.durationUnit !== "days")) {
+    context.addIssue({ code: "custom", path: ["durationUnit"], message: "O plano de 30 dias tem duração fixa de 30 dias" });
   }
   if (input.planId !== "hourly" && input.durationUnit === "hours") {
     context.addIssue({ code: "custom", path: ["durationUnit"], message: "A unidade horas é reservada ao plano de 1 hora" });
@@ -136,13 +139,12 @@ export const appRouter = router({
     createLicense: rbxisAdminProcedure
       .input(createLicenseSchema)
       .mutation(async ({ input }) => {
+        const { quantity, ...licenseInput } = input;
         const expiresAt = addDuration(new Date(), input.durationValue, input.durationUnit);
-        try {
-          return await createProductLicense({ ...input, expiresAt });
-        } catch (error) {
-          const message = String(error).toLowerCase().includes("duplicate") ? "Esse nome de usuário já existe" : "Não foi possível criar o acesso";
-          throw new TRPCError({ code: "BAD_REQUEST", message });
-        }
+        const results = await Promise.allSettled(Array.from({ length: quantity }, () => createProductLicense({ ...licenseInput, expiresAt })));
+        const keys = results.flatMap(result => result.status === "fulfilled" ? [result.value] : []);
+        if (keys.length === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Não foi possível criar nenhuma key. Tente novamente." });
+        return { keys, count: keys.length, failed: quantity - keys.length };
       }),
     updateLicense: rbxisAdminProcedure
       .input(z.object({ id: z.number().int().positive(), status: statusSchema.optional(), planId: z.string().min(1).max(40).optional(), durationValue: z.number().int().min(1).max(3650).optional(), durationUnit: durationUnitSchema.optional() }))

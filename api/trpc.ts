@@ -259,14 +259,21 @@ export default async function trpc(req: any, res: any) {
       const planId = String(data.planId ?? "daily");
       const durationValue = Number(data.durationValue);
       const durationUnit = String(data.durationUnit ?? "days");
+      const quantity = Number(data.quantity ?? 1);
+      const username = String(data.username ?? "").trim();
+      if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) return fail(res, 400, "A quantidade precisa ser de 1 a 20 keys");
+      if (username.length < 2 || username.length > 60) return fail(res, 400, "O nome de usuário precisa ter entre 2 e 60 caracteres");
       if (planId === "hourly" && (durationValue !== 1 || durationUnit !== "hours")) return fail(res, 400, "O plano de 1 hora precisa ter duração fixa de 1 hora");
+      if (planId === "monthly" && (durationValue !== 30 || durationUnit !== "days")) return fail(res, 400, "O plano de 30 dias tem duração fixa de 30 dias");
       if (planId !== "hourly" && durationUnit === "hours") return fail(res, 400, "A unidade horas é reservada ao plano de 1 hora");
       const now = Math.floor(Date.now() / 1000);
-      const type = planId === "hourly" ? "hourly" : planId === "weekly" ? "weekly" : planId === "perm" ? "perm" : "daily";
+      const type = planId === "hourly" ? "hourly" : planId === "weekly" ? "weekly" : planId === "monthly" ? "monthly" : planId === "perm" ? "perm" : "daily";
       const permanent = type === "perm";
-      const expire = permanent ? 0 : type === "hourly" ? 1 : type === "weekly" ? 7 : 1;
-      const created = await mockRequest<MockKey>("", { method: "POST", body: JSON.stringify({ key: `LUCK-${type}-${randomBytes(6).toString("hex").toUpperCase()}`, username: String(data.username ?? "").trim(), used: false, device: "", expire, type, createdAt: now, activatedAt: 0, expiresAt: 0, status: "active" }) });
-      return ok(res, asLicense(created));
+      const expire = permanent ? 0 : type === "hourly" ? 1 : type === "weekly" ? 7 : type === "monthly" ? 30 : 1;
+      const results = await Promise.allSettled(Array.from({ length: quantity }, () => mockRequest<MockKey>("", { method: "POST", body: JSON.stringify({ key: `LUCK-${type}-${randomBytes(6).toString("hex").toUpperCase()}`, username, used: false, device: "", expire, type, createdAt: now, activatedAt: 0, expiresAt: 0, status: "active" }) })));
+      const keys = results.flatMap((result) => result.status === "fulfilled" ? [asLicense(result.value)] : []);
+      if (keys.length === 0) return fail(res, 400, "Não foi possível criar nenhuma key. Tente novamente.");
+      return ok(res, { keys, count: keys.length, failed: quantity - keys.length });
     }
     const id = Number(data.id); const current = match(id);
     if (!current) return fail(res, 404, "Licença não encontrada");
@@ -276,7 +283,7 @@ export default async function trpc(req: any, res: any) {
     else if (path === "admin.blockLicense") patch.status = "blocked";
     else if (path === "admin.resetDevice") { patch.device = ""; patch.activatedAt = 0; patch.used = false; patch.expiresAt = 0; }
     else if (path === "admin.extendLicense") patch.expiresAt = addDuration(new Date((current.expiresAt ?? 0) * 1000), Number(data.durationValue), String(data.durationUnit));
-    else if (path === "admin.updateLicense") { if (data.status) patch.status = data.status; if (data.planId) { patch.type = data.planId; if (data.planId === "hourly" && current.type !== "hourly") { patch.expire = 1; patch.expiresAt = current.activatedAt ? activationExpirySeconds("hourly", 1, current.activatedAt) : 0; } } if (data.durationValue && data.durationUnit) { patch.expire = (data.planId === "hourly" || (!data.planId && current.type === "hourly")) && data.durationUnit === "hours" ? Number(data.durationValue) : durationDays(Number(data.durationValue), String(data.durationUnit)); patch.expiresAt = addDuration(new Date(), Number(data.durationValue), String(data.durationUnit)); } }
+    else if (path === "admin.updateLicense") { if (data.status) patch.status = data.status; if (data.planId) { patch.type = data.planId; if (data.planId === "hourly" && current.type !== "hourly") { patch.expire = 1; patch.expiresAt = current.activatedAt ? activationExpirySeconds("hourly", 1, current.activatedAt) : 0; } if (data.planId === "monthly") { patch.expire = 30; patch.expiresAt = current.activatedAt ? activationExpirySeconds("monthly", 30, current.activatedAt) : 0; } } if (data.durationValue && data.durationUnit) { patch.expire = (data.planId === "hourly" || (!data.planId && current.type === "hourly")) && data.durationUnit === "hours" ? Number(data.durationValue) : durationDays(Number(data.durationValue), String(data.durationUnit)); patch.expiresAt = addDuration(new Date(), Number(data.durationValue), String(data.durationUnit)); } }
     else return fail(res, 404, `Procedure not found: ${path}`);
     return ok(res, asLicense(await mockRequest<MockKey>(`/${encodeURIComponent(current.id ?? current.key)}`, { method: "PUT", body: JSON.stringify(patch) })));
   } catch (error: any) { return fail(res, 500, error?.message ?? "Internal server error"); }

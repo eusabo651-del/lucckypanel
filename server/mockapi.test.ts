@@ -8,6 +8,11 @@ describe("MockAPI key expiration", () => {
     expect(activationExpirySeconds("hourly", 1, activatedAt)).toBe(activatedAt + 3_600);
   });
 
+  it("expires the 30-day plan exactly 30 days after activation", () => {
+    const activatedAt = 1_800_000_000;
+    expect(activationExpirySeconds("monthly", 30, activatedAt)).toBe(activatedAt + 30 * 24 * 60 * 60);
+  });
+
   it("keeps permanent keys without an expiry timestamp", () => {
     expect(activationExpirySeconds("perm", 0, 1_800_000_000)).toBe(0);
   });

@@ -2,6 +2,7 @@ export const PLAN_CATALOG = [
   { id: "hourly", name: "1 hora", description: "Acesso por 1 hora após a ativação", accent: "gray" },
   { id: "daily", name: "1 dia", description: "Acesso diário", accent: "gray" },
   { id: "weekly", name: "1 semana", description: "Acesso semanal", accent: "blue" },
+  { id: "monthly", name: "30 dias", description: "Válido por 30 dias após a ativação", accent: "blue" },
   { id: "perm", name: "Permanente", description: "Acesso sem expiração", accent: "gold" },
 ] as const;
 
