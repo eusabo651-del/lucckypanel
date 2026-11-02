@@ -829,3 +829,35 @@ html, body { background: linear-gradient(135deg, #030303 0%, #1b1b1b 52%, #05050
   font-size: 8px;
   line-height: 1.4;
 }
+
+/* Admin dialog: portal-safe stacking and iOS viewport handling. */
+.modal-backdrop {
+  z-index: 1000;
+  isolation: isolate;
+  overflow-y: auto;
+  padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.modal-backdrop::before {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  background: #000000a8;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+.modal-card {
+  position: relative;
+  z-index: 1;
+  max-height: calc(100svh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+@supports not (height: 100svh) {
+  .modal-card { max-height: calc(100vh - 40px); }
+}
